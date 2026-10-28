@@ -1,0 +1,9 @@
+[submodule "libultraship"]
+	path = libultraship
+	url = https://github.com/please-be-nice/libultraship.git
+[submodule "ZAPDTR"]
+	path = ZAPDTR
+	url = https://github.com/please-be-nice/ZAPDTR
+[submodule "OTRExporter"]
+	path = OTRExporter
+	url = https://github.com/please-be-nice/OTRExporter

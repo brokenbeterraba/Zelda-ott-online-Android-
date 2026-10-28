@@ -1,0 +1,48 @@
+name: Build Zelda Online Android Host
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'AndroidHostApp/**'
+      - 'server/**'
+      - '.github/workflows/build-android-host.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-host-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android build components
+        run: |
+          sdkmanager --install \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.0" \
+            "ndk;26.3.11579264" \
+            "cmake;3.22.1"
+
+      - name: Build host APK
+        run: ./AndroidHostApp/build-apk.sh
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZeldaOnline-AndroidHost-debug
+          path: AndroidHostApp/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14

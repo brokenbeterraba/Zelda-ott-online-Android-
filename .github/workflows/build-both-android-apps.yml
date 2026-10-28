@@ -1,0 +1,95 @@
+name: Build both Android apps
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'Android/**'
+      - 'AndroidHostApp/**'
+      - 'server/**'
+      - 'soh/**'
+      - 'libultraship/**'
+      - 'ZAPDTR/**'
+      - 'OTRExporter/**'
+      - 'CMakeLists.txt'
+      - 'build-android-apps.sh'
+      - '.gitmodules'
+      - '.github/workflows/build-both-android-apps.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-both:
+    runs-on: ubuntu-24.04
+    container:
+      image: djvdw7f2ro/android-builder-soh:v1.0.4
+    steps:
+      - name: Checkout source and submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Mark checkout safe for Git
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Configure Android SDK paths
+        run: |
+          echo "sdk.dir=${ANDROID_SDK_ROOT}" > Android/local.properties
+          echo "ndk.dir=${ANDROID_NDK_HOME}" >> Android/local.properties
+          echo "sdk.dir=${ANDROID_SDK_ROOT}" > AndroidHostApp/local.properties
+
+      - name: Install host dependencies
+        run: |
+          apt-get update
+          apt-get install -y $(cat .github/workflows/apt-deps.txt)
+
+      - name: Install host Android SDK components
+        shell: bash
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager --install \
+            "platforms;android-35" \
+            "build-tools;35.0.0" \
+            "ndk;26.3.11579264" \
+            "cmake;3.22.1"
+
+      - name: Generate game assets
+        run: |
+          cmake -S . -B build-linux -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-linux --target GenerateSohOtr --parallel
+          cp soh/soh.o2r Android/app/src/main/assets/soh.o2r
+
+      - name: Build game APK
+        env:
+          GIT_TAG: combined-debug-${{ github.run_number }}
+        run: |
+          cd Android
+          ./gradlew --no-daemon assembleDebug
+          cd ..
+          APK=$(find Android/app/build/outputs/apk/debug -maxdepth 1 -name '*.apk' -print -quit)
+          test -n "$APK"
+          mkdir -p dist
+          cp "$APK" dist/Shipwright-Online-debug.apk
+
+      - name: Build host APK
+        run: |
+          cd AndroidHostApp
+          ./gradlew --no-daemon assembleDebug
+          cd ..
+          test -f AndroidHostApp/app/build/outputs/apk/debug/app-debug.apk
+          cp AndroidHostApp/app/build/outputs/apk/debug/app-debug.apk dist/ZeldaOnline-Host-debug.apk
+
+      - name: Generate checksums
+        run: cd dist && sha256sum *.apk > SHA256SUMS.txt
+
+      - name: Upload both APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: Shipwright-ZeldaOnline-two-android-apps
+          path: |
+            dist/Shipwright-Online-debug.apk
+            dist/ZeldaOnline-Host-debug.apk
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
