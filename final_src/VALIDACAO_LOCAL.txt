@@ -1,0 +1,7 @@
+Validação executada nesta revisão:
+- CMake configure/build do servidor dedicado Linux: SUCESSO (warnings não fatais).
+- Verificação estática das APIs Zelda Online adicionadas: realizada por busca de declarações/definições.
+- Build Android arm64: NÃO EXECUTADO (SDK/NDK e toolchain Android não disponíveis neste ambiente).
+- Teste em dispositivo Android / multiplayer real: NÃO EXECUTADO.
+
+Não instalar ou distribuir como APK final até o workflow Android compilar e o jogo ser testado no dispositivo.

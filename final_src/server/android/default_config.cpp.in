@@ -1,0 +1,3 @@
+// Gerado pelo CMake a partir de server/config.json. Não edite.
+extern const char* const kZoDefaultConfig;
+const char* const kZoDefaultConfig = R"ZOCFG(@ZO_DEFAULT_CONFIG@)ZOCFG";
