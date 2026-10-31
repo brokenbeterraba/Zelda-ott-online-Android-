@@ -13,6 +13,14 @@ static void ShowZeldaOnlineWindow() {
     if (SohGui::mZeldaOnlineRoomWindow == nullptr)
         return;
 
+    // Enable() registra o handler de ações da janela e carrega as configurações; só precisa rodar uma vez,
+    // depois que o ImGui já está de pé (por isso não é chamado durante a inicialização).
+    static bool sClientEnabled = false;
+    if (!sClientEnabled && ZeldaOnline::ZeldaOnlineClient::Instance != nullptr) {
+        sClientEnabled = true;
+        ZeldaOnline::ZeldaOnlineClient::Instance->Enable();
+    }
+
     SohGui::mZeldaOnlineRoomWindow->Show();
     SohGui::mZeldaOnlineRoomWindow->CenterAndExpand();
 }
@@ -38,8 +46,6 @@ void ZeldaOnlineMainMenu(WidgetInfo& info) {
         } else {
             CVarSetInteger("gZeldaOnline.Enabled", 1);
             ShowZeldaOnlineWindow();
-            if (ZeldaOnline::ZeldaOnlineClient::Instance != nullptr)
-                ZeldaOnline::ZeldaOnlineClient::Instance->Enable();
         }
 
         Ship::Context::GetInstance()->GetWindow()->GetGui()->SaveConsoleVariablesNextFrame();

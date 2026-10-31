@@ -26,6 +26,8 @@
 #include "soh/Enhancements/TimeDisplay/TimeDisplay.h"
 #include "soh/Enhancements/mod_menu.h"
 #include "soh/Network/Anchor/Anchor.h"
+#include "soh/Network/ZeldaOnline/ZeldaOnlineClient.hpp"
+#include "soh/Network/ZeldaOnline/ZeldaOnlineRoomWindow.hpp"
 
 namespace SohGui {
 
@@ -69,6 +71,7 @@ std::shared_ptr<SohMenu> mSohMenu;
 std::shared_ptr<ModMenuWindow> mModMenuWindow;
 std::shared_ptr<AudioEditor> mAudioEditorWindow;
 std::shared_ptr<InputViewer> mInputViewer;
+std::shared_ptr<ZeldaOnline::ZeldaOnlineRoomWindow> mZeldaOnlineRoomWindow;
 std::shared_ptr<InputViewerSettingsWindow> mInputViewerSettings;
 std::shared_ptr<CosmeticsEditorWindow> mCosmeticsEditorWindow;
 std::shared_ptr<ActorViewerWindow> mActorViewerWindow;
@@ -197,6 +200,15 @@ void SetupGuiElements() {
     gui->AddGuiWindow(mTimeDisplayWindow);
     mAnchorRoomWindow = std::make_shared<AnchorRoomWindow>(CVAR_WINDOW("AnchorRoom"), "Anchor Room");
     gui->AddGuiWindow(mAnchorRoomWindow);
+
+    // Zelda Online: janela (abas Entrar / Criar servidor) + cliente de rede.
+    mZeldaOnlineRoomWindow = std::make_shared<ZeldaOnline::ZeldaOnlineRoomWindow>(CVAR_WINDOW("ZeldaOnline"),
+                                                                                  "Zelda Online", ImVec2(520, 520));
+    ZeldaOnline::ZeldaOnlineRoomWindow::Instance = mZeldaOnlineRoomWindow.get();
+    gui->AddGuiWindow(mZeldaOnlineRoomWindow);
+    if (ZeldaOnline::ZeldaOnlineClient::Instance == nullptr) {
+        new ZeldaOnline::ZeldaOnlineClient();
+    }
 }
 
 void Destroy() {
@@ -222,6 +234,7 @@ void Destroy() {
     mCosmeticsEditorWindow = nullptr;
     mModMenuWindow = nullptr;
     mAudioEditorWindow = nullptr;
+    mZeldaOnlineRoomWindow = nullptr;
     mStatsWindow = nullptr;
     mConsoleWindow = nullptr;
     mGfxDebuggerWindow = nullptr;

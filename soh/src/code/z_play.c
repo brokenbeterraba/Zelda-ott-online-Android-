@@ -1658,6 +1658,8 @@ void Play_Draw(PlayState* play) {
             Play_DrawOverlayElements(play);
         }
 
+        GameInteractor_ExecuteOnDrawOverlay(play->state.gfxCtx);
+
         // Reset the inverted culling
         if (CVarGetInteger(CVAR_ENHANCEMENT("MirroredWorld"), 0)) {
             gSPClearExtraGeometryMode(POLY_OPA_DISP++, G_EX_INVERT_CULLING);

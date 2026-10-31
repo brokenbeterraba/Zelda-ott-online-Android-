@@ -1256,7 +1256,9 @@ void Actor_Init(Actor* actor, PlayState* play) {
     if (Object_IsLoaded(&play->objectCtx, actor->objBankIndex)) {
         Actor_SetObjectDependency(play, actor);
 
-        if (GameInteractor_ShouldActorInit(actor)) {
+        if (GameInteractor_ShouldActorDelayInit(actor)) {
+            // Init adiado: o loop de Actor_UpdateAll tenta de novo no próximo frame (actor->init segue != NULL).
+        } else if (GameInteractor_ShouldActorInit(actor)) {
             actor->init(actor, play);
             actor->init = NULL;
 
@@ -2634,7 +2636,9 @@ void Actor_UpdateAll(PlayState* play, ActorContext* actorCtx) {
                 if (Object_IsLoaded(&play->objectCtx, actor->objBankIndex)) {
                     Actor_SetObjectDependency(play, actor);
 
-                    if (GameInteractor_ShouldActorInit(actor)) {
+                    if (GameInteractor_ShouldActorDelayInit(actor)) {
+                        // init adiado: tenta de novo no próximo frame
+                    } else if (GameInteractor_ShouldActorInit(actor)) {
                         actor->init(actor, play);
                         actor->init = NULL;
 

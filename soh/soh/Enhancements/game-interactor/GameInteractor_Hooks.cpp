@@ -245,6 +245,22 @@ void GameInteractor_ExecuteOnPlayDrawEnd() {
     GameInteractor::Instance->ExecuteHooks<GameInteractor::OnPlayDrawEnd>();
 }
 
+void GameInteractor_ExecuteOnDrawOverlay(void* gfxCtx) {
+    GameInteractor::Instance->ExecuteHooks<GameInteractor::OnDrawOverlay>(gfxCtx);
+}
+
+// Retorna true se algum hook pediu para adiar a inicialização do ator (tentará de novo no próximo frame).
+bool GameInteractor_ShouldActorDelayInit(void* actor) {
+    bool result = false;
+    GameInteractor::Instance->ExecuteHooks<GameInteractor::ShouldActorDelayInit>(actor, &result);
+    GameInteractor::Instance->ExecuteHooksForID<GameInteractor::ShouldActorDelayInit>(((Actor*)actor)->id, actor,
+                                                                                      &result);
+    GameInteractor::Instance->ExecuteHooksForPtr<GameInteractor::ShouldActorDelayInit>((uintptr_t)actor, actor,
+                                                                                       &result);
+    GameInteractor::Instance->ExecuteHooksForFilter<GameInteractor::ShouldActorDelayInit>(actor, &result);
+    return result;
+}
+
 bool GameInteractor_Should(GIVanillaBehavior flag, u32 result, ...) {
     // Only the external function can use the Variadic Function syntax
     // To pass the va args to the next caller must be done using va_list and reading the args into it
