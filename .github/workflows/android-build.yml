@@ -14,12 +14,10 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Commits fixados do port Android 9.2.3 (linkzenic/Shipwright-Android, main).
-  # Este repositório não registra os submódulos (as pastas foram enviadas vazias),
-  # então o workflow baixa cada um no commit exato em vez de usar "submodules: recursive".
-  LUS_SHA: 3a9af4fc67ddc2d476f204fdc43f87dc363ee0e0       # please-be-nice/libultraship
-  ZAPDTR_SHA: 1aa5bfc16cba8e487077a2a1f5ab7d5263ecf508    # please-be-nice/ZAPDTR
-  OTREXPORTER_SHA: 77d47bc6d1767edb56f7cd461c5e1b7681f36a93  # please-be-nice/OTRExporter
+  # Commits fixados do port Android 9.2.3.
+  LUS_SHA: 3a9af4fc67ddc2d476f204fdc43f87dc363ee0e0
+  ZAPDTR_SHA: 1aa5bfc16cba8e487077a2a1f5ab7d5263ecf508
+  OTREXPORTER_SHA: 77d47bc6d1767edb56f7cd461c5e1b7681f36a93
 
 jobs:
   build:
@@ -41,42 +39,54 @@ jobs:
           set -euo pipefail
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
-          fetch_dep() {  # path url sha
+          fetch_dep() {
             local path="$1" url="$2" sha="$3"
-            rm -rf "$path"; mkdir -p "$path"
+            rm -rf "$path"
+            mkdir -p "$path"
             git -C "$path" init -q
             git -C "$path" remote add origin "$url"
             git -C "$path" fetch -q --depth 1 origin "$sha"
             git -C "$path" checkout -q FETCH_HEAD
             git -C "$path" submodule update --init --recursive --depth 1
-            local got; got="$(git -C "$path" rev-parse HEAD)"
-            [[ "$got" == "$sha" ]] || { echo "::error::$path em $got, esperado $sha"; exit 1; }
+
+            local got
+            got="$(git -C "$path" rev-parse HEAD)"
+            [[ "$got" == "$sha" ]] || {
+              echo "::error::$path em $got, esperado $sha"
+              exit 1
+            }
             echo "$path @ $got"
           }
 
           fetch_dep libultraship https://github.com/please-be-nice/libultraship.git "$LUS_SHA"
-          fetch_dep ZAPDTR       https://github.com/please-be-nice/ZAPDTR.git       "$ZAPDTR_SHA"
-          fetch_dep OTRExporter  https://github.com/please-be-nice/OTRExporter.git  "$OTREXPORTER_SHA"
+          fetch_dep ZAPDTR https://github.com/please-be-nice/ZAPDTR.git "$ZAPDTR_SHA"
+          fetch_dep OTRExporter https://github.com/please-be-nice/OTRExporter.git "$OTREXPORTER_SHA"
 
-          # Arquivos que o CMake e o Gradle realmente usam: falha de verdade se faltar
-          for f in libultraship/CMakeLists.txt \
-                   libultraship/src/fast/shaders \
-                   libultraship/src/ship/Context.cpp \
-                   ZAPDTR/ZAPD/CMakeLists.txt \
-                   OTRExporter/extract_assets.py \
-                   patches/libultraship-android-data-root.patch \
-                   patches/libultraship-touch-camera-active.patch \
-                   Android/gradlew; do
-            test -e "$f" || { echo "::error::Faltando: $f"; exit 1; }
+          for f in \
+            libultraship/CMakeLists.txt \
+            libultraship/src/fast/shaders \
+            libultraship/src/ship/Context.cpp \
+            ZAPDTR/ZAPD/CMakeLists.txt \
+            OTRExporter/extract_assets.py \
+            patches/libultraship-android-data-root.patch \
+            patches/libultraship-touch-camera-active.patch \
+            Android/gradlew; do
+            test -e "$f" || {
+              echo "::error::Faltando: $f"
+              exit 1
+            }
           done
 
-          # Os patches do libultraship são aplicados pelo Gradle (task applyLibultrashipAndroidPatch).
-          # Conferimos antes, com as mesmas opções, para o erro aparecer aqui e não no meio do build.
           cd libultraship
-          for p in ../patches/libultraship-android-data-root.patch ../patches/libultraship-touch-camera-active.patch; do
-            git apply --check --ignore-whitespace --whitespace=nowarn "$p" \
-              || { echo "::error::Patch não aplica no libultraship fixado: $p"; exit 1; }
+          for p in \
+            ../patches/libultraship-android-data-root.patch \
+            ../patches/libultraship-touch-camera-active.patch; do
+            git apply --check --ignore-whitespace --whitespace=nowarn "$p" || {
+              echo "::error::Patch não aplica no libultraship fixado: $p"
+              exit 1
+            }
           done
+
           echo "Dependências e patches OK."
 
       - name: Write local.properties
@@ -90,17 +100,29 @@ jobs:
           apt-get install -y $(cat .github/workflows/apt-deps.txt)
 
       - name: Generate soh.o2r
+        shell: bash
         run: |
           set -euo pipefail
+
           cmake -S . -B build-linux -G Ninja -DCMAKE_BUILD_TYPE=Release
+
           cmake --build build-linux --target GenerateSohOtr --parallel
+
+          test -f soh/soh.o2r || {
+            echo "::error::O arquivo soh/soh.o2r não foi gerado."
+            exit 1
+          }
+
+          mkdir -p Android/app/src/main/assets
           cp soh/soh.o2r Android/app/src/main/assets/soh.o2r
+
+          echo "soh.o2r gerado e copiado com sucesso."
 
       - name: Build APK (debug-signed, installable)
         id: build
         shell: bash
         run: |
-          set -o pipefail
+          set -euo pipefail
           cd Android
           chmod +x gradlew
           ./gradlew --no-daemon assembleDebug 2>&1 | tee ../android-build.log
@@ -112,14 +134,17 @@ jobs:
           {
             echo '## Primeiros erros reais do build'
             echo '```'
-            grep -n -m1 -B2 -A25 -E 'FAILED:|error:|fatal error|CMake Error|undefined reference|ld(\.lld)?: error|patch does not apply' android-build.log \
-              | cut -c1-400 || echo "(nenhum padrão de erro encontrado; veja o fim do log)"
+            grep -n -m1 -B2 -A25 -E \
+              'FAILED:|error:|fatal error|CMake Error|undefined reference|ld(\.lld)?: error|patch does not apply' \
+              android-build.log | cut -c1-400 \
+              || echo "(nenhum padrão de erro encontrado; veja o fim do log)"
             echo '```'
             echo '## Últimas 60 linhas'
             echo '```'
             tail -n 60 android-build.log | cut -c1-400
             echo '```'
           } > build-error-report.md
+
           cat build-error-report.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload log and error report
@@ -138,16 +163,32 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          APK="$(ls Android/app/build/outputs/apk/debug/*.apk 2>/dev/null | head -n1 || true)"
-          [[ -n "$APK" ]] || { echo "::error::Nenhum APK gerado"; exit 1; }
+
+          APK="$(find Android/app/build/outputs/apk/debug -maxdepth 1 -name '*.apk' -print -quit 2>/dev/null || true)"
+
+          [[ -n "$APK" ]] || {
+            echo "::error::Nenhum APK gerado"
+            exit 1
+          }
+
           echo "APK: $APK ($(du -h "$APK" | cut -f1))"
           unzip -tq "$APK"
+
           LIST="$(unzip -Z1 "$APK")"
-          for need in AndroidManifest.xml classes.dex assets/soh.o2r \
-                      lib/arm64-v8a/libSDL2.so lib/arm64-v8a/libsoh.so \
-                      lib/arm64-v8a/libootserver.so; do
-            grep -qx "$need" <<<"$LIST" || { echo "::error::APK sem $need"; exit 1; }
+
+          for need in \
+            AndroidManifest.xml \
+            classes.dex \
+            assets/soh.o2r \
+            lib/arm64-v8a/libSDL2.so \
+            lib/arm64-v8a/libsoh.so \
+            lib/arm64-v8a/libootserver.so; do
+            grep -qx "$need" <<<"$LIST" || {
+              echo "::error::APK sem $need"
+              exit 1
+            }
           done
+
           echo "apk=$APK" >> "$GITHUB_OUTPUT"
           echo "APK válido, com bibliotecas arm64-v8a."
 
@@ -161,7 +202,6 @@ jobs:
           retention-days: 14
 
   report-error:
-    # Publica o primeiro erro real em uma issue, para ser lido sem baixar o log.
     name: Publicar erro na issue
     needs: build
     if: always() && needs.build.result == 'failure'
@@ -170,25 +210,51 @@ jobs:
       issues: write
       actions: read
       contents: read
+
     steps:
       - uses: actions/download-artifact@v4
         with:
           name: android-build-log
         continue-on-error: true
+
       - name: Comment on issue
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
+          set -euo pipefail
+
           TITLE="Relatório de build CI"
-          N="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$TITLE\" in:title" --json number --jq '.[0].number' || true)"
+
+          N="$(gh issue list \
+            --repo "$GITHUB_REPOSITORY" \
+            --state open \
+            --search "\"$TITLE\" in:title" \
+            --json number \
+            --jq '.[0].number' || true)"
+
           if [[ -z "$N" ]]; then
-            N="$(gh issue create --repo "$GITHUB_REPOSITORY" --title "$TITLE" --body "Erros do build publicados automaticamente pelo workflow." | grep -oE '[0-9]+$')"
+            N="$(gh issue create \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "$TITLE" \
+              --body "Erros do build publicados automaticamente pelo workflow." \
+              | grep -oE '[0-9]+$')"
           fi
+
           {
             echo "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID (commit ${GITHUB_SHA::7})"
             echo
-            if [[ -f build-error-report.md ]]; then head -c 60000 build-error-report.md
-            else echo "O build falhou antes de gerar o log (provavelmente nas dependências). Veja o run acima."; fi
+
+            if [[ -f build-error-report.md ]]; then
+              head -c 60000 build-error-report.md
+            elif [[ -f android-build.log ]]; then
+              echo "Log disponível, mas relatório não foi gerado."
+              tail -n 100 android-build.log
+            else
+              echo "O build falhou antes de gerar o log. Veja o run acima."
+            fi
           } > comment.md
-          gh issue comment "$N" --repo "$GITHUB_REPOSITORY" --body-file comment.md
+
+          gh issue comment "$N" \
+            --repo "$GITHUB_REPOSITORY" \
+            --body-file comment.md
