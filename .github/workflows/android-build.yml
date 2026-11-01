@@ -99,12 +99,45 @@ jobs:
           apt-get update
           apt-get install -y $(cat .github/workflows/apt-deps.txt)
 
+      # --- Cache de compilação: a 1ª rodada é lenta; as seguintes recompilam só o que mudou. ---
+      - name: Restore ccache
+        uses: actions/cache/restore@v4
+        with:
+          path: .ccache
+          key: ccache-v1-${{ github.sha }}
+          restore-keys: |
+            ccache-v1-
+
+      - name: Restore Gradle cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            /root/.gradle/caches
+            /root/.gradle/wrapper
+          key: gradle-v1-${{ hashFiles('Android/**/*.gradle', 'Android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-v1-
+
+      - name: Configure ccache
+        shell: bash
+        run: |
+          {
+            echo "USE_CCACHE=1"
+            echo "CCACHE_DIR=$GITHUB_WORKSPACE/.ccache"
+            echo "CCACHE_MAXSIZE=4G"
+            echo "CCACHE_NOHASHDIR=1"
+            echo "CCACHE_COMPILERCHECK=content"
+            echo "CCACHE_BASEDIR=$GITHUB_WORKSPACE"
+          } >> "$GITHUB_ENV"
+          ccache --version | head -1
+
       - name: Generate soh.o2r
         shell: bash
         run: |
           set -euo pipefail
 
-          cmake -S . -B build-linux -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake -S . -B build-linux -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
           cmake --build build-linux --target GenerateSohOtr --parallel
 
@@ -127,11 +160,41 @@ jobs:
           chmod +x gradlew
           ./gradlew --no-daemon assembleDebug 2>&1 | tee ../android-build.log
 
+      - name: Diagnose ALL errors (ninja -k 0, reaproveita o que já compilou)
+        if: always() && steps.build.outcome == 'failure'
+        continue-on-error: true
+        shell: bash
+        run: |
+          NINJA_FILE="$(find Android/app/.cxx -name build.ninja -path '*arm64-v8a*' 2>/dev/null | head -1 || true)"
+          if [[ -z "$NINJA_FILE" ]]; then
+            echo "build.ninja não encontrado (falha antes da compilação nativa)."
+            exit 0
+          fi
+          echo "Diretório: $(dirname "$NINJA_FILE")"
+          # -k 0: não para no primeiro erro; mostra todos os arquivos com problema e os erros de link.
+          timeout 100m ninja -C "$(dirname "$NINJA_FILE")" -k 0 2>&1 | tee all-errors.log || true
+
       - name: Extract first real errors
         if: always() && steps.build.outcome == 'failure'
         shell: bash
         run: |
           {
+            if [[ -s all-errors.log ]]; then
+              echo '## TODOS os erros (ninja -k 0)'
+              echo '### Arquivos que falharam ao compilar'
+              echo '```'
+              grep -E '^FAILED:' all-errors.log | sed -E 's/^FAILED: //; s/ +$//' | sort -u | cut -c1-300 | head -80
+              echo '```'
+              echo '### Mensagens de erro (únicas, com contagem)'
+              echo '```'
+              grep -E ' error: |fatal error:' all-errors.log \
+                | sed -E 's#^.*/(soh|server|libultraship)/#\1/#' | cut -c1-300 | sort | uniq -c | sort -rn | head -80
+              echo '```'
+              echo '### Símbolos indefinidos (link)'
+              echo '```'
+              grep -oE 'undefined (reference|symbol): [^ ]+' all-errors.log | sort -u | cut -c1-250 | head -200
+              echo '```'
+            fi
             echo '## Primeiros erros reais do build'
             echo '```'
             grep -n -m1 -B2 -A25 -E \
@@ -147,6 +210,14 @@ jobs:
 
           cat build-error-report.md >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Save ccache (mesmo se o build falhou)
+        if: always()
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: .ccache
+          key: ccache-v1-${{ github.sha }}
+
       - name: Upload log and error report
         if: always()
         uses: actions/upload-artifact@v4
@@ -154,6 +225,7 @@ jobs:
           name: android-build-log
           path: |
             android-build.log
+            all-errors.log
             build-error-report.md
           if-no-files-found: warn
           retention-days: 14

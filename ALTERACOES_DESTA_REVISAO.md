@@ -23,3 +23,21 @@
   for ResourceLoad": o `bridge.h` do libultraship (C++) era incluído pela primeira vez DENTRO de `extern "C" {}`.
   Correção: `#include <libultraship/libultraship.h>` no topo dos dois arquivos (mesmo padrão do Anchor).
 - Esse foi o único arquivo-problema (2 FAILED) no log; como o ninja para ao falhar, o link e outros erros ainda podem aparecer.
+
+## Rodada 3
+- `PlayerPuppetController.cpp:1055` e `ZeldaOnlineClient.cpp:428` usavam `NameTagOptions::scale`, que não existia.
+  Adicionado o campo `scale` (0 = padrão 0.75) em `nametag.h` e honrado em `nametag.cpp`.
+- Rodada 2 resolveu HorsePuppet.cpp (agora compila). Esse era o único erro restante do log; o link ainda não foi alcançado.
+
+## Rodada 4 — CI mais rápido e diagnóstico completo
+- Workflow: ccache (cache salvo mesmo se o build falhar), cache do Gradle, e quando o gradle falha roda `ninja -k 0`
+  no mesmo diretório (já aquecido) para listar TODOS os arquivos com erro e TODOS os `undefined reference` de uma vez.
+- `build.gradle`: lança o compilador via ccache quando `USE_CCACHE` está definido (só no CI).
+- Servidor (`server/`): compilado e linkado no host com g++ -std=c++20 (13 arquivos, OK) e executado 3 s sem travar.
+- Includes locais do cliente (2494 verificados): nenhum quebrado.
+
+## BLOQUEADOR CONHECIDO (vai dar `undefined reference` no link)
+`UNDEFINED_ACTION_FUNCTIONS.tsv` lista ~128 funções usadas pelos controladores (ex.: `EnBrob_Idle`,
+`BgBdanObjects_WaitForSwitch`, `EnDodojr_*`, `EnReeba_*`, `EnRd_*`) que NÃO existem no código do jogo: lá elas se
+chamam `func_809CB054` etc. Os controladores comparam `actionFunc == EnBrob_Idle`, então precisam do nome real.
+Confirmado em EnBrob e BgBdanObjects. Afeta 16 controladores (Reeba, Dodojr, Bdan, Redead, Stinger, HakaTrap...).

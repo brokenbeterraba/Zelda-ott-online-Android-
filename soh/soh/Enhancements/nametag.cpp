@@ -27,6 +27,7 @@ typedef struct {
     int16_t width;             // Textbox width
     int16_t yOffset;           // Addition Y offset
     uint8_t noZBuffer;         // Allow rendering over geometry
+    float scale;               // Scale override, 0 = default
     Mtx* mtx;                  // Allocated Mtx for rendering
     Vtx* vtx;                  // Allocated Vtx for rendering
 } NameTag;
@@ -65,7 +66,7 @@ void DrawNameTag(PlayState* play, const NameTag* nameTag) {
         alpha = (440000.0f - nameTag->actor->xyzDistToPlayerSq) / 80000.0f;
     }
 
-    float scale = 75.0f / 100.f;
+    float scale = nameTag->scale > 0.0f ? nameTag->scale : 75.0f / 100.f;
 
     size_t numChar = nameTag->processedText.length();
     // No text to render
@@ -266,6 +267,7 @@ extern "C" void NameTag_RegisterForActorWithOptions(Actor* actor, const char* te
     nameTag.width = width;
     nameTag.yOffset = options.yOffset;
     nameTag.noZBuffer = options.noZBuffer;
+    nameTag.scale = options.scale;
     nameTag.mtx = new Mtx();
     nameTag.vtx = vertices;
 
