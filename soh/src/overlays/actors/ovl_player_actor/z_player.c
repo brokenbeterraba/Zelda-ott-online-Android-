@@ -12420,11 +12420,7 @@ void Player_Update(Actor* thisx, PlayState* play) {
     GameInteractor_ExecuteOnPlayerUpdate();
 }
 
-typedef struct BunnyEarKinematics {
-    /* 0x0 */ Vec3s rot;
-    /* 0x6 */ Vec3s angVel;
-} BunnyEarKinematics; // size = 0xC
-
+// BunnyEarKinematics agora é definido em z64player.h (usado também pelo cliente online)
 static BunnyEarKinematics sBunnyEarKinematics;
 
 static Gfx* sMaskDlists[PLAYER_MASK_MAX - 1] = {
