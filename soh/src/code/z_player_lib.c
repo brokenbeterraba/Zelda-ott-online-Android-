@@ -2288,3 +2288,71 @@ void Player_DrawPause(PlayState* play, u8* segment, SkelAnime* skelAnime, Vec3f*
                          play->state.gfxCtx->curFrameBuffer,
                          play->state.gfxCtx->curFrameBuffer + (PAUSE_EQUIP_PLAYER_WIDTH * PAUSE_EQUIP_PLAYER_HEIGHT));
 }
+
+// ZeldaOnline: tabelas de display lists usadas pelo sistema de skins do cliente online
+Gfx* sPlayerIronBootDLs[] = {
+    gLinkAdultLeftIronBootDL,
+    gLinkAdultRightIronBootDL,
+};
+
+Gfx* sPlayerHoverBootDLs[] = {
+    gLinkAdultLeftHoverBootDL,
+    gLinkAdultRightHoverBootDL,
+};
+
+Gfx* sPlayerGauntletPlate1DLs[] = {
+    gLinkAdultLeftGauntletPlate1DL,
+    gLinkAdultRightGauntletPlate1DL,
+};
+
+Gfx* sPlayerGauntletPlate2DLs[] = {
+    gLinkAdultLeftGauntletPlate2DL,
+    gLinkAdultRightGauntletPlate2DL,
+};
+
+Gfx* sPlayerGauntletPlate3DLs[] = {
+    gLinkAdultLeftGauntletPlate3DL,
+    gLinkAdultRightGauntletPlate3DL,
+};
+
+Gfx* sPlayerHookshotReticleDLs[] = {
+    gLinkAdultHookshotReticleDL,
+};
+
+Gfx* sPlayerBowStringDLs[] = {
+    gLinkAdultBowStringDL,
+    gLinkChildSlingshotStringDL,
+};
+
+// Acesso para PlayerSkin.cpp
+void** gPlayerSkinEyeTextures = (void**)sEyeTextures;
+void** gPlayerSkinMouthTextures = (void**)sMouthTextures;
+Gfx** gPlayerSkinLeftHandSwordDLs = sPlayerLeftHandSwordDLs;
+Gfx** gPlayerSkinLeftHandSwordDLs2 = sPlayerLeftHandSwordDLs2;
+Gfx** gPlayerSkinLeftHandHammerDLs = sPlayerLeftHandHammerDLs;
+Gfx** gPlayerSkinLeftHandBottleDLs = sPlayerLeftHandBottleDLs;
+Gfx** gPlayerSkinRightHandOpenDLs = sPlayerRightHandOpenDLs;
+Gfx** gPlayerSkinRightHandClosedDLs = sPlayerRightHandClosedDLs;
+Gfx** gPlayerSkinRightHandShieldDLs = sPlayerRightHandShieldDLs;
+Gfx** gPlayerSkinRightHandBowSlingshotDLs = sPlayerRightHandBowSlingshotDLs;
+Gfx** gPlayerSkinRightHandBowSlingshotDLs2 = sPlayerRightHandBowSlingshotDLs2;
+Gfx** gPlayerSkinRightHandOcarinaDLs = sPlayerRightHandOcarinaDLs;
+Gfx** gPlayerSkinRightHandOotDLs = sPlayerRightHandOotDLs;
+Gfx** gPlayerSkinRightHandHookshotDLs = sPlayerRightHandHookshotDLs;
+Gfx** gPlayerSkinSwordAndSheathDLs = sSwordAndSheathDLs;
+Gfx** gPlayerSkinSheathDLs = sSheathDLs;
+Gfx** gPlayerSkinSheathWithSwordDLs = sSheathWithSwordDLs;
+Gfx** gPlayerSkinSheathWithoutSwordDLs = sSheathWithoutSwordDLs;
+Gfx** gPlayerSkinWaistDLs = sPlayerWaistDLs;
+Gfx** gPlayerSkinFirstPersonLeftForearmDLs = sFirstPersonLeftForearmDLs;
+Gfx** gPlayerSkinFirstPersonLeftHandDLs = sFirstPersonLeftHandDLs;
+Gfx** gPlayerSkinFirstPersonRightShoulderDLs = sFirstPersonRightShoulderDLs;
+Gfx** gPlayerSkinFirstPersonForearmDLs = sFirstPersonForearmDLs;
+Gfx** gPlayerSkinFirstPersonRightHandHoldingWeaponDLs = sFirstPersonRightHandHoldingWeaponDLs;
+Gfx** gPlayerSkinGauntletPlate1DLs = sPlayerGauntletPlate1DLs;
+Gfx** gPlayerSkinGauntletPlate2DLs = sPlayerGauntletPlate2DLs;
+Gfx** gPlayerSkinGauntletPlate3DLs = sPlayerGauntletPlate3DLs;
+Gfx** gPlayerSkinIronBootDLs = sPlayerIronBootDLs;
+Gfx** gPlayerSkinHoverBootDLs = sPlayerHoverBootDLs;
+Gfx** gPlayerSkinHookshotReticleDLs = sPlayerHookshotReticleDLs;
+Gfx** gPlayerSkinBowStringDLs = sPlayerBowStringDLs;
