@@ -1,3 +1,6 @@
+// libultraship (C++/templates) precisa ser incluído FORA de extern "C"; os headers dos atores (global.h)
+// o puxam e, se a 1ª inclusão ocorrer dentro de extern "C" abaixo, o build quebra.
+#include <libultraship/libultraship.h>
 #include "HorsePuppet.hpp"
 #include "ZeldaOnlineClient.hpp"
 #include "ActorControllers/PlayerPuppetController.hpp"

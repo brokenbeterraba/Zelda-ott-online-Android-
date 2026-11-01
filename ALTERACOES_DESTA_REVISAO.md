@@ -17,3 +17,9 @@
 - Os 13 headers divergentes do roadmap e qualquer outro erro de API que só o compilador mostra.
 - Sincronização real de chefes, NPCs e itens entre dois aparelhos.
 - Rodar o workflow e mandar o primeiro erro real do relatório é o próximo passo.
+
+## Rodada 2 (primeiro erro real do CI)
+- `PlayerPuppetController.cpp` e `HorsePuppet.cpp` falhavam com "templates must have C++ linkage" / "conflicting types
+  for ResourceLoad": o `bridge.h` do libultraship (C++) era incluído pela primeira vez DENTRO de `extern "C" {}`.
+  Correção: `#include <libultraship/libultraship.h>` no topo dos dois arquivos (mesmo padrão do Anchor).
+- Esse foi o único arquivo-problema (2 FAILED) no log; como o ninja para ao falhar, o link e outros erros ainda podem aparecer.
