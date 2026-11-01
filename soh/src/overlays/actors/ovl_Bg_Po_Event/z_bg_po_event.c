@@ -639,3 +639,6 @@ void BgPoEvent_Reset(void) {
     sBgPoEventPuzzleState = 0;
     sBgPoEventblockPushDist = 0.0f;
 }
+
+// ZeldaOnline: ponteiros que expõem variáveis estáticas do ator ao cliente online
+ColliderTrisInit* gBgPoEventTrisInit = &sTrisInit;

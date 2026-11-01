@@ -2119,3 +2119,6 @@ void EnGo2_Draw(Actor* thisx, PlayState* play) {
         CLOSE_DISPS(play->state.gfxCtx);
     }
 }
+
+// ZeldaOnline: ponteiros que expõem variáveis estáticas do ator ao cliente online
+AnimationInfo* gEnGo2AnimationInfo = sAnimationInfo;

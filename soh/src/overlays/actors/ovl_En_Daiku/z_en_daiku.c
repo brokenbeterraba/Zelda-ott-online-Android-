@@ -654,3 +654,6 @@ void EnDaiku_PostLimbDraw(PlayState* play, s32 limb, Gfx** dList, Vec3s* rot, vo
 
     CLOSE_DISPS(play->state.gfxCtx);
 }
+
+// ZeldaOnline: ponteiros que expõem variáveis estáticas do ator ao cliente online
+AnimationFrameCountInfo* gEnDaikuAnimationInfo = &sAnimationInfo;

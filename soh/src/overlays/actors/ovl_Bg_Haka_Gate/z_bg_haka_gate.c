@@ -375,3 +375,9 @@ void BgHakaGate_Draw(Actor* thisx, PlayState* play) {
 void BgHakaGate_Reset(void) {
     sStatueRotY = 0;
 }
+
+// ZeldaOnline: ponteiros que expõem variáveis estáticas do ator ao cliente online
+s16* gBgHakaGateSkullOfTruthRotY = &sSkullOfTruthRotY;
+u8* gBgHakaGatePuzzleState = &sBgPoEventPuzzleState;
+s16* gBgHakaGateStatueRotY = &sStatueRotY;
+f32* gBgHakaGateStatueDistToPlayer = &sStatueDistToPlayer;

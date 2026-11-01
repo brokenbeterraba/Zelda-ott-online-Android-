@@ -1149,3 +1149,7 @@ void EnFloormas_DrawHighlighted(Actor* thisx, PlayState* play) {
 
     CLOSE_DISPS(play->state.gfxCtx);
 }
+
+// ZeldaOnline: ponteiros que expõem variáveis estáticas do ator ao cliente online
+ColliderCylinderInit* gEnFloormasCylinderInit = &sCylinderInit;
+DamageTable* gFloorMasterDamageTable = &sDamageTable;

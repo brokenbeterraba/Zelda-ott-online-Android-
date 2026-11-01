@@ -554,3 +554,6 @@ void BgHakaTrap_Reset(void) {
     D_80881014 = 0;
     D_80881018 = 0;
 }
+
+// ZeldaOnline: ponteiros que expõem variáveis estáticas do ator ao cliente online
+UNK_TYPE* gBgHakaTrapWallMask = &D_80881018;

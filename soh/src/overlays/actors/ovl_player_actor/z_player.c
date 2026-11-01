@@ -16764,3 +16764,6 @@ void Player_ReapplySkeleton(Player* thisx, PlayState* play) {
 
     Player_SetModelGroup(thisx, thisx->modelGroup);
 }
+
+// ZeldaOnline: ponteiros que expõem variáveis estáticas do ator ao cliente online
+BunnyEarKinematics* gCurrentDrawBunnyEar = &sBunnyEarKinematics;

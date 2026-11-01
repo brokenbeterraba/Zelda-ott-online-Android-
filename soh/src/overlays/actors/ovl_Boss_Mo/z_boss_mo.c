@@ -142,9 +142,9 @@ const ActorInit Boss_Mo_InitVars = {
     (ActorResetFunc)BossMo_Reset,
 };
 
-static BossMo* sMorphaCore = NULL;
-static BossMo* sMorphaTent1 = NULL;
-static BossMo* sMorphaTent2 = NULL;
+BossMo* sMorphaCore = NULL;
+BossMo* sMorphaTent1 = NULL;
+BossMo* sMorphaTent2 = NULL;
 
 static f32 sFlatWidth[41] = {
     15.0f, 12.0f, 9.0f, 6.5f, 4.8f, 4.0f, 3.4f, 3.1f, 3.0f, 3.1f, 3.2f, 3.4f, 3.6f, 3.8f,
@@ -3623,3 +3623,6 @@ void BossMo_Reset(void) {
     sBossGanonSeed2 = 0;
     sBossGanonSeed3 = 0;
 }
+
+// ZeldaOnline: ponteiros que expõem variáveis estáticas do ator ao cliente online
+f32* gMorphaTentWidth = &sTentWidth;

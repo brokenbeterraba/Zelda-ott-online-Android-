@@ -407,3 +407,6 @@ void BgHidanHamstep_Draw(Actor* thisx, PlayState* play) {
 
     CLOSE_DISPS(play->state.gfxCtx);
 }
+
+// ZeldaOnline: ponteiros que expõem variáveis estáticas do ator ao cliente online
+ColliderTrisInit* gBgHidanHamstepTrisInit = &sTrisInit;

@@ -254,3 +254,6 @@ void BgHakaTubo_Draw(Actor* thisx, PlayState* play) {
     Gfx_DrawDListOpa(play, object_haka_objects_DL_00FE40);
     BgHakaTubo_DrawFlameCircle(this, play);
 }
+
+// ZeldaOnline: ponteiros que expõem variáveis estáticas do ator ao cliente online
+s32* gBgHakaTuboPotsDestroyed = &sPotsDestroyed;

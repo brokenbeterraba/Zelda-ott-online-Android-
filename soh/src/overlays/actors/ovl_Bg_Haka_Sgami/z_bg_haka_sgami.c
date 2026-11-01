@@ -308,3 +308,6 @@ void BgHakaSgami_Draw(Actor* thisx, PlayState* play) {
         Gfx_DrawDListOpa(play, object_ice_objects_DL_0021F0);
     }
 }
+
+// ZeldaOnline: ponteiros que expõem variáveis estáticas do ator ao cliente online
+ColliderTrisInit* gBgHakaSgamiTrisInit = &sTrisInit;

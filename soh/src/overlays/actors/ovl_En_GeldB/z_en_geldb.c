@@ -1656,3 +1656,9 @@ s32 EnGeldB_DodgeRanged(PlayState* play, EnGeldB* this) {
     }
     return false;
 }
+
+// ZeldaOnline: ponteiros que expõem variáveis estáticas do ator ao cliente online
+ColliderCylinderInit* gEnGeldBBodyCylInit = &sBodyCylInit;
+ColliderTrisInit* gEnGeldBBlockTrisInit = &sBlockTrisInit;
+ColliderQuadInit* gEnGeldBSwordQuadInit = &sSwordQuadInit;
+DamageTable* gEnGeldBDamageTable = &sDamageTable;

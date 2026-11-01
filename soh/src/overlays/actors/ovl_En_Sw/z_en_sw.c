@@ -1024,3 +1024,6 @@ void EnSw_Draw(Actor* thisx, PlayState* play) {
         func_80B0EEA4(play);
     }
 }
+
+// ZeldaOnline: ponteiros que expõem variáveis estáticas do ator ao cliente online
+AnimationInfo* gEnSwAnimationInfo = sAnimationInfo;

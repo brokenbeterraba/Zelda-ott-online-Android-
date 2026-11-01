@@ -3307,3 +3307,19 @@ void BossSst_Reset(void) {
     sStaticColor.g = 0;
     sStaticColor.b = 0;
 }
+
+// ZeldaOnline: ponteiros que expõem variáveis estáticas do ator ao cliente online
+BossSst** gBossSstHead = &sHead;
+BossSst** gBossSstHands = sHands;
+BgSstFloor** gBossSstFloor = &sFloor;
+s32* gBossSstHandState = sHandState;
+u32* gBossSstBodyStatic = &sBodyStatic;
+ColliderJntSphInit* gBossSstJntSphInitHead = &sJntSphInitHead;
+ColliderJntSphInit* gBossSstJntSphInitHand = &sJntSphInitHand;
+ColliderCylinderInit* gBossSstCylinderInitHead = &sCylinderInitHead;
+ColliderCylinderInit* gBossSstCylinderInitHand = &sCylinderInitHand;
+CollisionCheckInfoInit* gBossSstColChkInfoInit = &sColChkInfoInit;
+DamageTable* gBossSstDamageTable = &sDamageTable;
+s16* gBossSstCutsceneCamera = &sCutsceneCamera;
+Vec3f* gBossSstCameraAt = &sCameraAt;
+Vec3f* gBossSstCameraEye = &sCameraEye;

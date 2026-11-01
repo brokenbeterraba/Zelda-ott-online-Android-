@@ -358,3 +358,6 @@ void BgGndIceblock_Draw(Actor* thisx, PlayState* play) {
 
     Gfx_DrawDListOpa(play, gWaterTrialIceBlockDL);
 }
+
+// ZeldaOnline: ponteiros que expõem variáveis estáticas do ator ao cliente online
+u8* gGndIceblockPositions = sBlockPositions;
