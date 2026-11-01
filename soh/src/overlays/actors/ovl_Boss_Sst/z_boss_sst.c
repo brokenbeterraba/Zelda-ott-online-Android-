@@ -272,6 +272,11 @@ static InitChainEntry sInitChain[] = {
     ICHAIN_VEC3F_DIV1000(scale, 20, ICHAIN_STOP),
 };
 
+// ZeldaOnline: permite ao cliente online registrar o chão criado por outro jogador
+void BossSst_SetFloor(BgSstFloor* floor) {
+    sFloor = floor;
+}
+
 void BossSst_Init(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
     BossSst* this = (BossSst*)thisx;

@@ -12,26 +12,26 @@ void EnRd_Destroy(Actor* thisx, PlayState* play);
 void EnRd_Update(Actor* thisx, PlayState* play);
 void EnRd_Draw(Actor* thisx, PlayState* play);
 
-void func_80AE269C(EnRd* this);
-void func_80AE2744(EnRd* this, PlayState* play);
-void func_80AE2970(EnRd* this);
-void func_80AE2A10(EnRd* this, PlayState* play);
-void func_80AE2C1C(EnRd* this, PlayState* play);
-void func_80AE2F50(EnRd* this, PlayState* play);
-void func_80AE2FD0(EnRd* this, PlayState* play);
-void func_80AE31DC(EnRd* this);
-void func_80AE3260(EnRd* this, PlayState* play);
-void func_80AE33F0(EnRd* this);
-void func_80AE392C(EnRd* this);
-void func_80AE39D4(EnRd* this);
-void func_80AE3454(EnRd* this, PlayState* play);
-void func_80AE37BC(EnRd* this);
-void func_80AE3834(EnRd* this, PlayState* play);
-void func_80AE3978(EnRd* this, PlayState* play);
-void func_80AE3A54(EnRd* this, PlayState* play);
-void func_80AE3B18(EnRd* this, PlayState* play);
-void func_80AE3C98(EnRd* this, PlayState* play);
-void func_80AE3ECC(EnRd* this, PlayState* play);
+void EnRd_SetupIdle(EnRd* this);
+void EnRd_Idle(EnRd* this, PlayState* play);
+void EnRd_SetupRiseFromCoffin(EnRd* this);
+void EnRd_RiseFromCoffin(EnRd* this, PlayState* play);
+void EnRd_WalkToPlayer(EnRd* this, PlayState* play);
+void EnRd_SetupWalkToHome(EnRd* this, PlayState* play);
+void EnRd_WalkToHome(EnRd* this, PlayState* play);
+void EnRd_SetupWalkToParent(EnRd* this);
+void EnRd_WalkToParent(EnRd* this, PlayState* play);
+void EnRd_SetupGrab(EnRd* this);
+void EnRd_SetupStandUp(EnRd* this);
+void EnRd_SetupCrouch(EnRd* this);
+void EnRd_Grab(EnRd* this, PlayState* play);
+void EnRd_SetupAttemptPlayerFreeze(EnRd* this);
+void EnRd_AttemptPlayerFreeze(EnRd* this, PlayState* play);
+void EnRd_StandUp(EnRd* this, PlayState* play);
+void EnRd_Crouch(EnRd* this, PlayState* play);
+void EnRd_Damaged(EnRd* this, PlayState* play);
+void EnRd_Dead(EnRd* this, PlayState* play);
+void EnRd_Stunned(EnRd* this, PlayState* play);
 
 const ActorInit En_Rd_InitVars = {
     ACTOR_EN_RD,
@@ -160,9 +160,9 @@ void EnRd_Init(Actor* thisx, PlayState* play) {
     Collider_SetCylinder(play, &this->collider, thisx, &sCylinderInit);
 
     if (thisx->params >= -2) {
-        func_80AE269C(this);
+        EnRd_SetupIdle(this);
     } else {
-        func_80AE2970(this);
+        EnRd_SetupRiseFromCoffin(this);
     }
 
     SkelAnime_Update(&this->skelAnime);
@@ -183,7 +183,7 @@ void EnRd_Destroy(Actor* thisx, PlayState* play) {
     ResourceMgr_UnregisterSkeleton(&this->skelAnime);
 }
 
-void func_80AE2630(PlayState* play, Actor* thisx, s32 arg2) {
+void EnRd_UpdateMourningTarget(PlayState* play, Actor* thisx, s32 arg2) {
     Actor* enemyIt = play->actorCtx.actorLists[ACTORCAT_ENEMY].head;
 
     while (enemyIt != NULL) {
@@ -201,7 +201,7 @@ void func_80AE2630(PlayState* play, Actor* thisx, s32 arg2) {
     }
 }
 
-void func_80AE269C(EnRd* this) {
+void EnRd_SetupIdle(EnRd* this) {
     if (this->actor.params != 2) {
         Animation_MorphToLoop(&this->skelAnime, &gGibdoRedeadIdleAnim, -6.0f);
     } else {
@@ -212,10 +212,10 @@ void func_80AE269C(EnRd* this) {
     this->unk_30C = (Rand_ZeroOne() * 10.0f) + 5.0f;
     this->actor.speedXZ = 0.0f;
     this->actor.world.rot.y = this->actor.shape.rot.y;
-    EnRd_SetupAction(this, func_80AE2744);
+    EnRd_SetupAction(this, EnRd_Idle);
 }
 
-void func_80AE2744(EnRd* this, PlayState* play) {
+void EnRd_Idle(EnRd* this, PlayState* play) {
     SkelAnime_Update(&this->skelAnime);
     Math_SmoothStepToS(&this->unk_30E, 0, 1, 0x64, 0);
     Math_SmoothStepToS(&this->unk_310, 0, 1, 0x64, 0);
@@ -237,17 +237,17 @@ void func_80AE2744(EnRd* this, PlayState* play) {
     if (this->actor.parent != NULL) {
         if (this->unk_305 == 0) {
             if (this->actor.params != 2) {
-                func_80AE31DC(this);
+                EnRd_SetupWalkToParent(this);
             } else {
-                func_80AE392C(this);
+                EnRd_SetupStandUp(this);
             }
         }
     } else {
         if (this->unk_305 != 0) {
             if (this->actor.params != 2) {
-                func_80AE37BC(this);
+                EnRd_SetupAttemptPlayerFreeze(this);
             } else {
-                func_80AE392C(this);
+                EnRd_SetupStandUp(this);
             }
         }
 
@@ -262,9 +262,9 @@ void func_80AE2744(EnRd* this, PlayState* play) {
             if (!enemyRandoCCActive ||
                 (enemyRandoCCActive && this->actor.yDistToPlayer <= 100.0f && this->actor.yDistToPlayer >= -100.0f)) {
                 if ((this->actor.params != 2) && (this->unk_305 == 0)) {
-                    func_80AE37BC(this);
+                    EnRd_SetupAttemptPlayerFreeze(this);
                 } else {
-                    func_80AE392C(this);
+                    EnRd_SetupStandUp(this);
                 }
             }
         }
@@ -275,7 +275,7 @@ void func_80AE2744(EnRd* this, PlayState* play) {
     }
 }
 
-void func_80AE2970(EnRd* this) {
+void EnRd_SetupRiseFromCoffin(EnRd* this) {
     Animation_Change(&this->skelAnime, &gGibdoRedeadIdleAnim, 0, 0, Animation_GetLastFrame(&gGibdoRedeadIdleAnim),
                      ANIMMODE_LOOP, -6.0f);
     this->unk_31B = 11;
@@ -284,16 +284,16 @@ void func_80AE2970(EnRd* this) {
     this->actor.gravity = 0.0f;
     this->actor.shape.yOffset = 0.0f;
     this->actor.speedXZ = 0.0f;
-    EnRd_SetupAction(this, func_80AE2A10);
+    EnRd_SetupAction(this, EnRd_RiseFromCoffin);
 }
 
 // Rising out of coffin
-void func_80AE2A10(EnRd* this, PlayState* play) {
+void EnRd_RiseFromCoffin(EnRd* this, PlayState* play) {
     if (this->actor.shape.rot.x != -0x4000) {
         Math_SmoothStepToS(&this->actor.shape.rot.x, 0, 1, 0x7D0, 0);
         if (Math_SmoothStepToF(&this->actor.world.pos.y, this->actor.home.pos.y, 0.3f, 2.0f, 0.3f) == 0.0f) {
             this->actor.gravity = -3.5f;
-            func_80AE269C(this);
+            EnRd_SetupIdle(this);
         }
     } else {
         if (this->actor.world.pos.y == this->actor.home.pos.y) {
@@ -310,15 +310,15 @@ void func_80AE2A10(EnRd* this, PlayState* play) {
     }
 }
 
-void func_80AE2B90(EnRd* this, PlayState* play) {
+void EnRd_SetupWalkToPlayer(EnRd* this, PlayState* play) {
     Animation_Change(&this->skelAnime, &gGibdoRedeadWalkAnim, 1.0f, 4.0f, Animation_GetLastFrame(&gGibdoRedeadWalkAnim),
                      ANIMMODE_LOOP_INTERP, -4.0f);
     this->actor.speedXZ = 0.4f;
     this->unk_31B = 4;
-    EnRd_SetupAction(this, func_80AE2C1C);
+    EnRd_SetupAction(this, EnRd_WalkToPlayer);
 }
 
-void func_80AE2C1C(EnRd* this, PlayState* play) {
+void EnRd_WalkToPlayer(EnRd* this, PlayState* play) {
     Vec3f sp44 = D_80AE4918;
     Color_RGBA8 sp40 = D_80AE4924;
     Color_RGBA8 sp3C = D_80AE4928;
@@ -334,7 +334,7 @@ void func_80AE2C1C(EnRd* this, PlayState* play) {
     SkelAnime_Update(&this->skelAnime);
 
     if (Actor_WorldDistXYZToPoint(&player->actor, &this->actor.home.pos) >= 150.0f) {
-        func_80AE2F50(this, play);
+        EnRd_SetupWalkToHome(this, play);
     }
 
     if ((ABS(sp32) < 0x1554) && (Actor_WorldDistXYZToActor(&this->actor, &player->actor) <= 150.0f)) {
@@ -354,7 +354,7 @@ void func_80AE2C1C(EnRd* this, PlayState* play) {
                 Audio_PlayActorSound2(&this->actor, NA_SE_EN_REDEAD_AIM);
             }
         } else {
-            func_80AE2F50(this, play);
+            EnRd_SetupWalkToHome(this, play);
         }
     }
 
@@ -367,11 +367,11 @@ void func_80AE2C1C(EnRd* this, PlayState* play) {
         player->actor.freezeTimer = 0;
         if (play->grabPlayer(play, player)) {
             this->actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
-            func_80AE33F0(this);
+            EnRd_SetupGrab(this);
         }
     } else if (this->actor.params > 0) {
         if (this->actor.parent != NULL) {
-            func_80AE31DC(this);
+            EnRd_SetupWalkToParent(this);
         } else {
             this->unk_305 = 0;
         }
@@ -384,14 +384,14 @@ void func_80AE2C1C(EnRd* this, PlayState* play) {
     }
 }
 
-void func_80AE2F50(EnRd* this, PlayState* play) {
+void EnRd_SetupWalkToHome(EnRd* this, PlayState* play) {
     Animation_Change(&this->skelAnime, &gGibdoRedeadWalkAnim, 0.5f, 0, Animation_GetLastFrame(&gGibdoRedeadWalkAnim),
                      ANIMMODE_LOOP_INTERP, -4.0f);
     this->unk_31B = 2;
-    EnRd_SetupAction(this, func_80AE2FD0);
+    EnRd_SetupAction(this, EnRd_WalkToHome);
 }
 
-void func_80AE2FD0(EnRd* this, PlayState* play) {
+void EnRd_WalkToHome(EnRd* this, PlayState* play) {
     Player* player = GET_PLAYER(play);
     s32 pad;
     s16 targetY = Actor_WorldYawTowardPoint(&this->actor, &this->actor.home.pos);
@@ -402,9 +402,9 @@ void func_80AE2FD0(EnRd* this, PlayState* play) {
         this->actor.speedXZ = 0.0f;
         if (Math_SmoothStepToS(&this->actor.shape.rot.y, this->actor.home.rot.y, 1, 0x1C2, 0) == 0) {
             if (this->actor.params != 2) {
-                func_80AE269C(this);
+                EnRd_SetupIdle(this);
             } else {
-                func_80AE39D4(this);
+                EnRd_SetupCrouch(this);
             }
         }
     }
@@ -419,10 +419,10 @@ void func_80AE2FD0(EnRd* this, PlayState* play) {
         !(player->stateFlags2 & PLAYER_STATE2_GRABBED_BY_ENEMY) &&
         (Actor_WorldDistXYZToPoint(&player->actor, &this->actor.home.pos) < 150.0f)) {
         this->actor.targetMode = 0;
-        func_80AE2B90(this, play);
+        EnRd_SetupWalkToPlayer(this, play);
     } else if (this->actor.params > 0) {
         if (this->actor.parent != NULL) {
-            func_80AE31DC(this);
+            EnRd_SetupWalkToParent(this);
         } else {
             this->unk_305 = 0;
         }
@@ -435,15 +435,15 @@ void func_80AE2FD0(EnRd* this, PlayState* play) {
     }
 }
 
-void func_80AE31DC(EnRd* this) {
+void EnRd_SetupWalkToParent(EnRd* this) {
     Animation_Change(&this->skelAnime, &gGibdoRedeadWalkAnim, 0.5f, 0, Animation_GetLastFrame(&gGibdoRedeadWalkAnim),
                      ANIMMODE_LOOP_INTERP, -4.0f);
     this->unk_31B = 3;
     this->unk_305 = 1;
-    EnRd_SetupAction(this, func_80AE3260);
+    EnRd_SetupAction(this, EnRd_WalkToParent);
 }
 
-void func_80AE3260(EnRd* this, PlayState* play) {
+void EnRd_WalkToParent(EnRd* this, PlayState* play) {
     if (this->actor.parent != NULL) {
         s32 pad;
         s16 targetY;
@@ -459,16 +459,16 @@ void func_80AE3260(EnRd* this, PlayState* play) {
             this->actor.speedXZ = 0.0f;
 
             if (this->actor.params != 2) {
-                func_80AE269C(this);
+                EnRd_SetupIdle(this);
             } else {
-                func_80AE39D4(this);
+                EnRd_SetupCrouch(this);
             }
         }
 
         Math_SmoothStepToS(&this->unk_30E, 0, 1, 0x64, 0);
         Math_SmoothStepToS(&this->unk_310, 0, 1, 0x64, 0);
     } else {
-        func_80AE2B90(this, play);
+        EnRd_SetupWalkToPlayer(this, play);
     }
 
     this->actor.world.rot.y = this->actor.shape.rot.y;
@@ -481,16 +481,16 @@ void func_80AE3260(EnRd* this, PlayState* play) {
     }
 }
 
-void func_80AE33F0(EnRd* this) {
+void EnRd_SetupGrab(EnRd* this) {
     Animation_PlayOnce(&this->skelAnime, &gGibdoRedeadGrabStartAnim);
     this->unk_30C = this->unk_304 = 0;
     this->unk_319 = 200;
     this->unk_31B = 8;
     this->actor.speedXZ = 0.0f;
-    EnRd_SetupAction(this, func_80AE3454);
+    EnRd_SetupAction(this, EnRd_Grab);
 }
 
-void func_80AE3454(EnRd* this, PlayState* play) {
+void EnRd_Grab(EnRd* this, PlayState* play) {
     s32 pad;
     Player* player = GET_PLAYER(play);
 
@@ -555,19 +555,19 @@ void func_80AE3454(EnRd* this, PlayState* play) {
             this->actor.flags |= ACTOR_FLAG_ATTENTION_ENABLED;
             this->unk_306 = 0xA;
             this->unk_307 = 0xF;
-            func_80AE2B90(this, play);
+            EnRd_SetupWalkToPlayer(this, play);
             break;
     }
 }
 
-void func_80AE37BC(EnRd* this) {
+void EnRd_SetupAttemptPlayerFreeze(EnRd* this) {
     Animation_Change(&this->skelAnime, &gGibdoRedeadLookBackAnim, 0.0f, 0.0f,
                      Animation_GetLastFrame(&gGibdoRedeadLookBackAnim), ANIMMODE_ONCE, 0.0f);
     this->unk_31B = 7;
-    EnRd_SetupAction(this, func_80AE3834);
+    EnRd_SetupAction(this, EnRd_AttemptPlayerFreeze);
 }
 
-void func_80AE3834(EnRd* this, PlayState* play) {
+void EnRd_AttemptPlayerFreeze(EnRd* this, PlayState* play) {
     Vec3f sp34 = D_80AE492C;
     Color_RGBA8 sp30 = D_80AE4938;
     Color_RGBA8 sp2C = D_80AE493C;
@@ -581,40 +581,40 @@ void func_80AE3834(EnRd* this, PlayState* play) {
             Player_SetAutoLockOnActor(play, &this->actor);
         }
         Audio_PlayActorSound2(&this->actor, NA_SE_EN_REDEAD_AIM);
-        func_80AE2B90(this, play);
+        EnRd_SetupWalkToPlayer(this, play);
     }
 }
 
-void func_80AE392C(EnRd* this) {
+void EnRd_SetupStandUp(EnRd* this) {
     Animation_MorphToPlayOnce(&this->skelAnime, &gGibdoRedeadStandUpAnim, -4.0f);
     this->unk_31B = 5;
-    EnRd_SetupAction(this, func_80AE3978);
+    EnRd_SetupAction(this, EnRd_StandUp);
 }
 
-void func_80AE3978(EnRd* this, PlayState* play) {
+void EnRd_StandUp(EnRd* this, PlayState* play) {
     if (SkelAnime_Update(&this->skelAnime)) {
         if (this->actor.parent != NULL) {
-            func_80AE31DC(this);
+            EnRd_SetupWalkToParent(this);
         } else {
-            func_80AE37BC(this);
+            EnRd_SetupAttemptPlayerFreeze(this);
         }
     }
 }
 
-void func_80AE39D4(EnRd* this) {
+void EnRd_SetupCrouch(EnRd* this) {
     Animation_Change(&this->skelAnime, &gGibdoRedeadStandUpAnim, -1.0f,
                      Animation_GetLastFrame(&gGibdoRedeadStandUpAnim), 0.0f, ANIMMODE_ONCE, -4.0f);
     this->unk_31B = 6;
-    EnRd_SetupAction(this, func_80AE3A54);
+    EnRd_SetupAction(this, EnRd_Crouch);
 }
 
-void func_80AE3A54(EnRd* this, PlayState* play) {
+void EnRd_Crouch(EnRd* this, PlayState* play) {
     if (SkelAnime_Update(&this->skelAnime)) {
-        func_80AE269C(this);
+        EnRd_SetupIdle(this);
     }
 }
 
-void func_80AE3A8C(EnRd* this) {
+void EnRd_SetupDamaged(EnRd* this) {
     Animation_MorphToPlayOnce(&this->skelAnime, &gGibdoRedeadDamageAnim, -6.0f);
 
     if (this->actor.bgCheckFlags & 1) {
@@ -624,10 +624,10 @@ void func_80AE3A8C(EnRd* this) {
     this->actor.flags |= ACTOR_FLAG_ATTENTION_ENABLED;
     Audio_PlayActorSound2(&this->actor, NA_SE_EN_REDEAD_DAMAGE);
     this->unk_31B = 9;
-    EnRd_SetupAction(this, func_80AE3B18);
+    EnRd_SetupAction(this, EnRd_Damaged);
 }
 
-void func_80AE3B18(EnRd* this, PlayState* play) {
+void EnRd_Damaged(EnRd* this, PlayState* play) {
     Player* player = GET_PLAYER(play);
 
     if (this->actor.speedXZ < 0.0f) {
@@ -641,29 +641,29 @@ void func_80AE3B18(EnRd* this, PlayState* play) {
         this->actor.world.rot.y = this->actor.shape.rot.y;
 
         if (this->actor.parent != NULL) {
-            func_80AE31DC(this);
+            EnRd_SetupWalkToParent(this);
         } else if (Actor_WorldDistXYZToPoint(&player->actor, &this->actor.home.pos) >= 150.0f) {
-            func_80AE2F50(this, play);
+            EnRd_SetupWalkToHome(this, play);
         } else {
-            func_80AE2B90(this, play);
+            EnRd_SetupWalkToPlayer(this, play);
         }
 
         this->unk_31D = 0xFF;
     }
 }
 
-void func_80AE3C20(EnRd* this) {
+void EnRd_SetupDead(EnRd* this) {
     Animation_MorphToPlayOnce(&this->skelAnime, &gGibdoRedeadDeathAnim, -1.0f);
     this->unk_31B = 10;
     this->unk_30C = 300;
     this->actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
     this->actor.speedXZ = 0.0f;
     Audio_PlayActorSound2(&this->actor, NA_SE_EN_REDEAD_DEAD);
-    EnRd_SetupAction(this, func_80AE3C98);
+    EnRd_SetupAction(this, EnRd_Dead);
     GameInteractor_ExecuteOnEnemyDefeat(&this->actor);
 }
 
-void func_80AE3C98(EnRd* this, PlayState* play) {
+void EnRd_Dead(EnRd* this, PlayState* play) {
     if (this->actor.category != ACTORCAT_PROP) {
         Actor_ChangeCategory(play, &play->actorCtx, &this->actor, ACTORCAT_PROP);
     }
@@ -681,7 +681,7 @@ void func_80AE3C98(EnRd* this, PlayState* play) {
             }
             if (this->unk_314 != 0) {
                 if (this->unk_314 == 0xB4) {
-                    func_80AE2630(play, &this->actor, 0);
+                    EnRd_UpdateMourningTarget(play, &this->actor, 0);
                 }
                 this->actor.scale.y -= 0.000075f;
                 this->unk_314 -= 5;
@@ -696,7 +696,7 @@ void func_80AE3C98(EnRd* this, PlayState* play) {
     }
 }
 
-void func_80AE3DE4(EnRd* this) {
+void EnRd_SetupStunned(EnRd* this) {
     this->unk_31B = 1;
     this->actor.speedXZ = 0.0f;
     this->actor.world.rot.y = this->actor.shape.rot.y;
@@ -711,10 +711,10 @@ void func_80AE3DE4(EnRd* this) {
         Audio_PlayActorSound2(&this->actor, NA_SE_EN_LIGHT_ARROW_HIT);
         Actor_SetColorFilter(&this->actor, -0x8000, 0xC8, 0, 0x50);
     }
-    EnRd_SetupAction(this, func_80AE3ECC);
+    EnRd_SetupAction(this, EnRd_Stunned);
 }
 
-void func_80AE3ECC(EnRd* this, PlayState* play) {
+void EnRd_Stunned(EnRd* this, PlayState* play) {
     if ((this->unk_318 != 0) && (this->unk_316 != 0)) {
         this->unk_316--;
         if (this->unk_316 >= 0xFF) {
@@ -728,16 +728,16 @@ void func_80AE3ECC(EnRd* this, PlayState* play) {
 
     if (this->actor.colorFilterTimer == 0) {
         if (this->actor.colChkInfo.health == 0) {
-            func_80AE2630(play, &this->actor, 1);
-            func_80AE3C20(this);
+            EnRd_UpdateMourningTarget(play, &this->actor, 1);
+            EnRd_SetupDead(this);
             Item_DropCollectibleRandom(play, &this->actor, &this->actor.world.pos, 0x90);
         } else {
-            func_80AE3A8C(this);
+            EnRd_SetupDamaged(this);
         }
     }
 }
 
-void func_80AE3F9C(EnRd* this, PlayState* play) {
+void EnRd_TurnTowardsPlayer(EnRd* this, PlayState* play) {
     s16 temp1;
     s16 temp2;
     s16 temp3;
@@ -760,13 +760,13 @@ void func_80AE3F9C(EnRd* this, PlayState* play) {
     this->unk_30E = CLAMP(this->unk_30E, -9583, 9583);
 }
 
-void func_80AE4114(EnRd* this, PlayState* play) {
+void EnRd_UpdateDamage(EnRd* this, PlayState* play) {
     s32 pad;
     Player* player = GET_PLAYER(play);
 
     if ((gSaveContext.sunsSongState != SUNSSONG_INACTIVE) && (this->actor.shape.rot.x == 0) && (this->unk_318 == 0) &&
         (this->unk_31B != 9) && (this->unk_31B != 10) && (this->unk_31B != 1)) {
-        func_80AE3DE4(this);
+        EnRd_SetupStunned(this);
         return;
     }
 
@@ -783,7 +783,7 @@ void func_80AE4114(EnRd* this, PlayState* play) {
             if ((this->unk_31C != 0) && (this->unk_31C != 6)) {
                 if (((this->unk_31C == 1) || (this->unk_31C == 13)) && (this->unk_31B != 1)) {
                     Actor_ApplyDamage(&this->actor);
-                    func_80AE3DE4(this);
+                    EnRd_SetupStunned(this);
                     return;
                 }
 
@@ -799,11 +799,11 @@ void func_80AE4114(EnRd* this, PlayState* play) {
 
                 Actor_ApplyDamage(&this->actor);
                 if (this->actor.colChkInfo.health == 0) {
-                    func_80AE2630(play, &this->actor, 1);
-                    func_80AE3C20(this);
+                    EnRd_UpdateMourningTarget(play, &this->actor, 1);
+                    EnRd_SetupDead(this);
                     Item_DropCollectibleRandom(play, 0, &this->actor.world.pos, 0x90);
                 } else {
-                    func_80AE3A8C(this);
+                    EnRd_SetupDamaged(this);
                 }
             }
         }
@@ -816,7 +816,7 @@ void EnRd_Update(Actor* thisx, PlayState* play) {
     Player* player = GET_PLAYER(play);
     s32 pad2;
 
-    func_80AE4114(this, play);
+    EnRd_UpdateDamage(this, play);
 
     if (gSaveContext.sunsSongState != SUNSSONG_INACTIVE && this->unk_318 == 0) {
         gSaveContext.sunsSongState = SUNSSONG_INACTIVE;
@@ -837,7 +837,7 @@ void EnRd_Update(Actor* thisx, PlayState* play) {
         }
 
         if (this->unk_31B == 7) {
-            func_80AE3F9C(this, play);
+            EnRd_TurnTowardsPlayer(this, play);
         }
     }
 
