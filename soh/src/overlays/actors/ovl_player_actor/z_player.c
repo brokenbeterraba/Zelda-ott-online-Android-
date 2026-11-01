@@ -11648,11 +11648,11 @@ void Player_UpdateCamAndSeqModes(PlayState* play, Player* this) {
     }
 }
 
-static Vec3f D_808547A4 = { 0.0f, 0.5f, 0.0f };
-static Vec3f D_808547B0 = { 0.0f, 0.5f, 0.0f };
+Vec3f D_808547A4 = { 0.0f, 0.5f, 0.0f };
+Vec3f D_808547B0 = { 0.0f, 0.5f, 0.0f };
 
-static Color_RGBA8 D_808547BC = { 255, 255, 100, 255 };
-static Color_RGBA8 D_808547C0 = { 255, 50, 0, 0 };
+Color_RGBA8 D_808547BC = { 255, 255, 100, 255 };
+Color_RGBA8 D_808547C0 = { 255, 50, 0, 0 };
 
 void Player_UpdateBurningDekuStick(PlayState* play, Player* this) {
     f32 temp;
@@ -16740,4 +16740,27 @@ void Player_StartTalking(PlayState* play, Actor* actor) {
         this->naviActor->flags |= ACTOR_FLAG_TALK;
         func_80835EA4(play, 0xB);
     }
+}
+
+// ZeldaOnline: refaz o esqueleto do jogador (usado pelo cliente quando o "puppet" muda de idade/tipo)
+void Player_ReapplySkeleton(Player* thisx, PlayState* play) {
+    FlexSkeletonHeader* skelHeader = gPlayerSkelHeaders[((void)0, gSaveContext.linkAge)];
+
+    ResourceMgr_UnregisterSkeleton(&thisx->skelAnime);
+    ResourceMgr_UnregisterSkeleton(&thisx->upperSkelAnime);
+
+    void* animation = thisx->skelAnime.animation == NULL ? GET_PLAYER_ANIM(PLAYER_ANIMGROUP_wait, thisx->modelAnimType)
+                                                         : thisx->skelAnime.animation;
+    void* upperAnimation =
+        thisx->upperSkelAnime.animation == NULL ? Player_GetIdleAnim(thisx) : thisx->upperSkelAnime.animation;
+
+    SkelAnime_InitLink(play, &thisx->skelAnime, skelHeader, (LinkAnimationHeader*)animation, 9, thisx->jointTable,
+                       thisx->morphTable, PLAYER_LIMB_MAX);
+    thisx->skelAnime.baseTransl = sSkeletonBaseTransl;
+
+    SkelAnime_InitLink(play, &thisx->upperSkelAnime, skelHeader, (LinkAnimationHeader*)upperAnimation, 9,
+                       thisx->upperJointTable, thisx->upperMorphTable, PLAYER_LIMB_MAX);
+    thisx->upperSkelAnime.baseTransl = sSkeletonBaseTransl;
+
+    Player_SetModelGroup(thisx, thisx->modelGroup);
 }
