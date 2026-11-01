@@ -657,4 +657,6 @@ void func_80097534(PlayState* play, RoomContext* roomCtx) {
     gSaveContext.ship.stats.tsIdx++;
     gSaveContext.ship.stats.roomNum = roomCtx->curRoom.num;
     gSaveContext.ship.stats.roomTimer = 0;
+
+    GameInteractor_ExecuteOnTransitionRoom();
 }

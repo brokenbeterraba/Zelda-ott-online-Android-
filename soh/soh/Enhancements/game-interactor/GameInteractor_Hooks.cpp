@@ -245,7 +245,25 @@ void GameInteractor_ExecuteOnPlayDrawEnd() {
     GameInteractor::Instance->ExecuteHooks<GameInteractor::OnPlayDrawEnd>();
 }
 
-void GameInteractor_ExecuteOnDrawOverlay(void* gfxCtx) {
+void GameInteractor_ExecuteOnPlayPostInit(int sceneNum) {
+    GameInteractor::Instance->ExecuteHooks<GameInteractor::OnPlayPostInit>(sceneNum);
+}
+
+void GameInteractor_ExecuteOnTransitionRoom() {
+    GameInteractor::Instance->ExecuteHooks<GameInteractor::OnTransitionRoom>();
+}
+
+bool GameInteractor_ShouldLoadSetupActors() {
+    bool result = true;
+    GameInteractor::Instance->ExecuteHooks<GameInteractor::ShouldLoadSetupActors>(&result);
+    return result;
+}
+
+void GameInteractor_ExecuteOnSceneLoad(int16_t sceneNum) {
+    GameInteractor::Instance->ExecuteHooks<GameInteractor::OnSceneLoad>(sceneNum);
+}
+
+void GameInteractor_ExecuteOnDrawOverlay(GraphicsContext* gfxCtx) {
     GameInteractor::Instance->ExecuteHooks<GameInteractor::OnDrawOverlay>(gfxCtx);
 }
 

@@ -265,6 +265,7 @@ typedef struct Actor {
     /* 0x130 */ ActorFunc update; // Update Routine. Called by `Actor_UpdateAll`
     /* 0x134 */ ActorFunc draw; // Draw Routine. Called by `Actor_Draw`
     /* 0x138 */ ActorResetFunc reset;
+    u32 zoLocalId; // ZeldaOnline: id local do ator para sincronização
     /* 0x13C */ char dbgPad[0x10]; // Padding that only exists in the debug rom
 } Actor; // size = 0x14C
 

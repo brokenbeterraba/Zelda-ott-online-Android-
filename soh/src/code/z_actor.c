@@ -2588,16 +2588,19 @@ void Actor_UpdateAll(PlayState* play, ActorContext* actorCtx) {
     unkFlag = 0;
 
     if (play->numSetupActors != 0) {
-        actorEntry = &play->setupActorList[0];
-        for (i = 0; i < play->numSetupActors; i++) {
-            Actor* spawnedActor = Actor_SpawnEntry(&play->actorCtx, actorEntry++, play);
+        // ZeldaOnline: o cliente pode impedir o carregamento dos atores da cena (o servidor decide quem os cria)
+        if (GameInteractor_ShouldLoadSetupActors()) {
+            actorEntry = &play->setupActorList[0];
+            for (i = 0; i < play->numSetupActors; i++) {
+                Actor* spawnedActor = Actor_SpawnEntry(&play->actorCtx, actorEntry++, play);
 
-            // #region SOH [ObjectExtension] ActorListIndex tracking
-            SetActorListIndex(spawnedActor, (s16)i);
-            // #endregion
+                // #region SOH [ObjectExtension] ActorListIndex tracking
+                SetActorListIndex(spawnedActor, (s16)i);
+                // #endregion
+            }
+            play->numSetupActors = 0;
+            GameInteractor_ExecuteOnSceneSpawnActors();
         }
-        play->numSetupActors = 0;
-        GameInteractor_ExecuteOnSceneSpawnActors();
     }
 
     if (actorCtx->unk_02 != 0) {

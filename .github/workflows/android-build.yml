@@ -165,7 +165,7 @@ jobs:
         continue-on-error: true
         shell: bash
         run: |
-          NINJA_FILE="$(find Android/app/.cxx -name build.ninja -path '*arm64-v8a*' 2>/dev/null | head -1 || true)"
+          NINJA_FILE="$(for f in $(find Android/app/.cxx -name build.ninja -path '*arm64-v8a*' 2>/dev/null); do grep -q 'build soh/CMakeFiles/soh.dir' "$f" && { echo "$f"; break; }; done)"
           if [[ -z "$NINJA_FILE" ]]; then
             echo "build.ninja não encontrado (falha antes da compilação nativa)."
             exit 0

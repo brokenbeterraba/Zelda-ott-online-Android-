@@ -13,8 +13,6 @@ void EnHy_WatchDog(EnHy* npc, PlayState* play);
 void EnHy_DoNothing(EnHy* npc, PlayState* play);
 void EnHy_WaitDogFoundRewardGiven(EnHy* npc, PlayState* play);
 void EnHy_FinishGivingDogFoundReward(EnHy* npc, PlayState* play);
-// This Shipwright engine revision does not export EnHy_Fidget; use its safe idle action.
-static inline void EnHy_Fidget(EnHy* npc, PlayState* play) { EnHy_DoNothing(npc, play); }
 
 void EnHy_InitImpl(EnHy* npc, PlayState* play);
 

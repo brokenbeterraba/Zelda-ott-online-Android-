@@ -2815,7 +2815,12 @@ typedef enum {
     // ```
     // #### `args`
     // - `*int32_t (camId)`
-    VB_SHOULD_LOAD_BG_IMAGE
+    VB_SHOULD_LOAD_BG_IMAGE,
+
+    // #### `args`
+    // none
+    // ZeldaOnline: allows the online client to freeze the day/night clock
+    VB_ADVANCE_DAYTIME
 } GIVanillaBehavior;
 
 #endif

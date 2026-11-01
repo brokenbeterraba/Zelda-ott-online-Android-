@@ -691,6 +691,8 @@ void Play_Init(GameState* thisx) {
 
     // nextEntranceIndex was not initialized, so the previous value was carried over during soft resets.
     gPlayState->nextEntranceIndex = gSaveContext.entranceIndex;
+
+    GameInteractor_ExecuteOnPlayPostInit(gPlayState->sceneNum);
 }
 
 void Play_Update(PlayState* play) {

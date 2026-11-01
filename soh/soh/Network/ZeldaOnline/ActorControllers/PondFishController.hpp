@@ -13,7 +13,6 @@ extern "C" {
 extern Vec3f sLurePos;
 extern Fishing* sFishingHookedFish;
 bool getShouldSpawnLoaches();
-extern FishingFishInit sFishInits[];
 extern f32 sFishOnHandLength;
 }
 
