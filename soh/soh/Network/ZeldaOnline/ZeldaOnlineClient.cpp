@@ -1626,6 +1626,84 @@ void ZeldaOnlineClient::OnIncomingPacket(ByteStream& packet) {
         } break;
 
 
+        case SERVER_PACKET_GIVE_ITEM: {
+            u16 networkID = (u16)(packet.Read<PackedUInt2>().value());
+            u16 modId = (u16)(packet.Read<PackedUInt2>().value());
+            u16 getItemId = (u16)(packet.Read<PackedUInt2>().value());
+            u16 mapIndex = (u16)(packet.Read<PackedUInt2>().value());
+
+            if (gPlayState == NULL || CVarGetInteger("gZeldaOnline.ShareItems", 1) == 0)
+                break;
+
+            GetItemEntry getItemEntry;
+            if (modId == MOD_NONE) {
+                getItemEntry = ItemTableManager::Instance->RetrieveItemEntry(MOD_NONE, getItemId);
+            } else {
+                getItemEntry = Rando::StaticData::RetrieveItem(static_cast<RandomizerGet>(getItemId)).GetGIEntry_Copy();
+            }
+
+            if (getItemEntry.getItemId == GI_NONE)
+                break;
+
+            if (getItemEntry.modIndex == MOD_NONE) {
+                if (getItemEntry.getItemId == GI_SWORD_BGS) {
+                    gSaveContext.bgsFlag = true;
+                    gSaveContext.swordHealth = 8;
+                }
+
+                auto oldMapIndex = gSaveContext.mapIndex;
+                gSaveContext.mapIndex = mapIndex;
+                m_skipItemGive = true; // não reenviar o item que acabamos de receber
+                Item_Give(gPlayState, static_cast<u8>(getItemEntry.itemId));
+                m_skipItemGive = false;
+                gSaveContext.mapIndex = oldMapIndex;
+            } else if (getItemEntry.modIndex == MOD_RANDOMIZER) {
+                if (getItemEntry.getItemId == RG_ICE_TRAP)
+                    break;
+                auto oldMapIndex = gSaveContext.mapIndex;
+                gSaveContext.mapIndex = mapIndex;
+                m_skipItemGive = true;
+                Randomizer_Item_Give(gPlayState, getItemEntry);
+                m_skipItemGive = false;
+                gSaveContext.mapIndex = oldMapIndex;
+            }
+
+            if (getItemEntry.gid == GID_HEART_CONTAINER || getItemEntry.gid == GID_HEART_PIECE) {
+                gSaveContext.healthAccumulator = 0x140;
+            }
+
+            {
+                s32 heartPieces = (s32)(gSaveContext.inventory.questItems & 0xF0000000) >> (QUEST_HEART_PIECE + 4);
+                if (heartPieces >= 4) {
+                    gSaveContext.inventory.questItems &= ~0xF0000000;
+                    gSaveContext.inventory.questItems += (heartPieces % 4) << (QUEST_HEART_PIECE + 4);
+                    gSaveContext.healthCapacity += 0x10 * (heartPieces / 4);
+                    gSaveContext.health += 0x10 * (heartPieces / 4);
+                }
+            }
+
+            {
+                std::string giver = ZeldaOnlineRoomWindow::Instance != nullptr
+                                        ? ZeldaOnlineRoomWindow::Instance->NameOf(networkID)
+                                        : std::string();
+                if (getItemEntry.modIndex == MOD_NONE) {
+                    Notification::Emit({
+                        .itemIcon = GetTextureForItemId(getItemEntry.itemId),
+                        .prefix = giver,
+                        .message = "shared",
+                        .suffix = SohUtils::GetItemName(getItemEntry.itemId),
+                    });
+                } else if (getItemEntry.modIndex == MOD_RANDOMIZER) {
+                    Notification::Emit({
+                        .prefix = giver, .message = "shared",
+                        .suffix = Rando::StaticData::RetrieveItem((RandomizerGet)(getItemEntry.getItemId))
+                                      .GetName()
+                                      .GetEnglish()
+                    });
+                }
+            }
+        } break;
+
         case SERVER_PACKET_CHAT_MESSAGE: {
             u16 fromNetworkID = (u16)(packet.Read<PackedUInt2>().value());
             std::string text = packet.ReadString(packet.BytesLeft());
@@ -2002,6 +2080,41 @@ void ZeldaOnlineClient::RegisterHooks(bool enabled) {
                 }
             }
         }
+
+        // ---- Compartilhar o item com a party (itens "de verdade"; rupees/munição/corações de drop ficam locais) ----
+        if (CVarGetInteger("gZeldaOnline.ShareItems", 1) == 0 || itemEntry.getItemId == GI_NONE)
+            return;
+
+        switch (itemEntry.getItemCategory) {
+            case ITEM_CATEGORY_LESSER:
+            case ITEM_CATEGORY_HEALTH:
+            case ITEM_CATEGORY_BOSS_KEY:
+            case ITEM_CATEGORY_SKULLTULA_TOKEN:
+            case ITEM_CATEGORY_MAJOR:
+                break;
+            default: // JUNK, SMALL_KEY (já sincronizada acima), etc.
+                return;
+        }
+
+        if (itemEntry.modIndex == MOD_RANDOMIZER && itemEntry.getItemId == RG_ICE_TRAP)
+            return;
+
+        // Item de baú: os outros jogadores já recebem pelo CLIENT_PACKET_CHEST_OPENED.
+        const auto now = std::chrono::steady_clock::now();
+        for (auto it = m_pendingChestItems.begin(); it != m_pendingChestItems.end();) {
+            if (now - it->at > std::chrono::seconds(60)) {
+                it = m_pendingChestItems.erase(it); // expirou
+            } else if (it->modIndex == (uint16_t)itemEntry.modIndex && it->getItemId == (uint16_t)itemEntry.getItemId) {
+                m_pendingChestItems.erase(it); // consome: este item veio de um baú
+                return;
+            } else {
+                ++it;
+            }
+        }
+
+        WritePacket(newPacket(CLIENT_PACKET_GIVE_ITEM)
+                    << PackedUInt2((u16)(itemEntry.modIndex)) << PackedUInt2((u16)(itemEntry.getItemId))
+                    << PackedUInt2((u16)(gSaveContext.mapIndex)));
     });
 
     COND_HOOK(OnFlagSet, enabled, [&](s16 flagType, s16 flag) {
@@ -2048,6 +2161,9 @@ void ZeldaOnlineClient::RegisterHooks(bool enabled) {
                 packet << PackedUInt2((u16)(chest->getItemEntry.modIndex));
                 packet << PackedUInt2((u16)(chest->getItemEntry.getItemId));
                 WritePacket(packet);
+                m_pendingChestItems.push_back({ (uint16_t)chest->getItemEntry.modIndex,
+                                                (uint16_t)chest->getItemEntry.getItemId,
+                                                std::chrono::steady_clock::now() });
                 break;
             }
             return;

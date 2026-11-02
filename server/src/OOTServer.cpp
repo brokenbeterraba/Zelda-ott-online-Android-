@@ -1860,6 +1860,25 @@ namespace ZeldaOnline
 		}
 		break;
 
+		case CLIENT_PACKET_GIVE_ITEM:
+		{
+			// Item pego por um jogador: retransmite para o resto da party (em qualquer cena), menos para quem enviou.
+			unsigned int modId = data.Read<PackedUInt2>().value();
+			unsigned int getItemId = data.Read<PackedUInt2>().value();
+			uint16_t mapIndex = data.Read<PackedUInt2>().value();
+
+			if (auto& party = player->GetParty())
+			{
+				ByteStream packet = newPacket(SERVER_PACKET_GIVE_ITEM);
+				packet << PackedUInt2(player->NetworkID());
+				packet << PackedUInt2(modId);
+				packet << PackedUInt2(getItemId);
+				packet << PackedUInt2(mapIndex);
+				party->SendToAll(packet, player);
+			}
+		}
+		break;
+
 		case CLIENT_PACKET_CHAT_MESSAGE:
 		{
 			auto text = data.ReadString(data.BytesLeft());

@@ -10,6 +10,8 @@
 #ifdef __cplusplus
 #include <unordered_set>
 #include <unordered_map>
+#include <vector>
+#include <chrono>
 #include "ZNetworking.hpp"
 #include "ByteStream.hpp"
 #include "BytePacking.hpp"
@@ -98,6 +100,14 @@ class ZeldaOnlineClient : public ZNetworking {
     int m_blockSceneSetupActors = -1;
     int m_keepAliveTimer = 20 * 3;
     bool m_skipItemGive = false;
+    // Itens de baú que ESTE cliente acabou de abrir (o baú já é replicado por CLIENT_PACKET_CHEST_OPENED);
+    // usados para não enviar o mesmo item de novo por CLIENT_PACKET_GIVE_ITEM (evita duplicar nos outros jogadores).
+    struct PendingChestItem {
+        uint16_t modIndex;
+        uint16_t getItemId;
+        std::chrono::steady_clock::time_point at;
+    };
+    std::vector<PendingChestItem> m_pendingChestItems;
     ResourceDownloader m_downloader;
     std::string m_fileServerUrl;
 

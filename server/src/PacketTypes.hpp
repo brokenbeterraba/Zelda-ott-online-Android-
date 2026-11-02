@@ -46,8 +46,9 @@ namespace ZeldaOnline {
         CLIENT_PACKET_CHAT_MESSAGE = 35,
         CLIENT_PACKET_UPDATE_PARTY_SETTINGS = 36,
 
-        CLIENT_PACKET_UPDATE_DUNGEON_KEYS = 37
+        CLIENT_PACKET_UPDATE_DUNGEON_KEYS = 37,
 
+        CLIENT_PACKET_GIVE_ITEM = 38
     };
 
     enum ServerPackets {
@@ -90,7 +91,9 @@ namespace ZeldaOnline {
 
         SERVER_PACKET_CHAT_MESSAGE = 33,
         SERVER_PACKET_UPDATE_PARTY_SETTINGS = 34,
-        SERVER_PACKET_UPDATE_DUNGEON_KEYS = 35
+        SERVER_PACKET_UPDATE_DUNGEON_KEYS = 35,
+
+        SERVER_PACKET_GIVE_ITEM = 36
     };
 
     static const int PLAYER_PUPPET_ROOM = -1;
