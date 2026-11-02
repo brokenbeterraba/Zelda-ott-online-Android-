@@ -141,6 +141,11 @@
 #include "ActorControllers/HamishiController.hpp"
 #include "ActorControllers/JyaBombiwaController.hpp"
 #include "ActorControllers/HidanKowarerukabeController.hpp"
+#include "ActorControllers/Spot08BakudankabeController.hpp"
+#include "ActorControllers/Spot11BakudankabeController.hpp"
+#include "ActorControllers/Spot17BakudankabeController.hpp"
+#include "ActorControllers/BombwallController.hpp"
+#include "ActorControllers/BreakwallController.hpp"
 #include "ActorControllers/JyaZurerukabeController.hpp"
 #include "ActorControllers/TwinrovaController.hpp"
 #include "ActorControllers/TrController.hpp"
@@ -408,6 +413,11 @@ class ActorControllerFactory {
         Register<HamishiController>(ACTOR_OBJ_HAMISHI);
         Register<JyaBombiwaController>(ACTOR_BG_JYA_BOMBIWA);
         Register<HidanKowarerukabeController>(ACTOR_BG_HIDAN_KOWARERUKABE);
+        Register<Spot08BakudankabeController>(ACTOR_BG_SPOT08_BAKUDANKABE);
+        Register<Spot11BakudankabeController>(ACTOR_BG_SPOT11_BAKUDANKABE);
+        Register<Spot17BakudankabeController>(ACTOR_BG_SPOT17_BAKUDANKABE);
+        Register<BombwallController>(ACTOR_BG_BOMBWALL);
+        Register<BreakwallController>(ACTOR_BG_BREAKWALL);
         Register<JyaZurerukabeController>(ACTOR_BG_JYA_ZURERUKABE);
         Register<TwinrovaController>(ACTOR_BOSS_TW);
         Register<TrController>(ACTOR_EN_TR);
