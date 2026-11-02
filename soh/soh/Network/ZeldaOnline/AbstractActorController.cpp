@@ -12,12 +12,19 @@ extern "C" void EnSw_CrossProduct(Vec3f* a, Vec3f* b, Vec3f* dst);
 
 namespace ZeldaOnline {
 void AbstractActorController::SendUpdate() {
+    // Only the authoritative controller publishes actor state. A controller can
+    // outlive the network connection briefly during disconnect/scene teardown.
+    auto* client = ZeldaOnlineClient::Instance;
+    if (client == nullptr || !client->isConnected || !m_isLeader || m_runningLocally || m_actor == nullptr) {
+        return;
+    }
+
     ByteStream propUpdates;
     WriteProperties(propUpdates);
 
     if (propUpdates.Length() > 0) {
-        ZeldaOnlineClient::Instance->WritePacket(newPacket(CLIENT_PACKET_ACTOR_PROPERTIES)
-                                                 << PackedUInt2((unsigned int)(m_networkID)) << propUpdates);
+        client->WritePacket(newPacket(CLIENT_PACKET_ACTOR_PROPERTIES)
+                            << PackedUInt2(static_cast<unsigned int>(m_networkID)) << propUpdates);
     }
 }
 
@@ -581,10 +588,6 @@ AbstractActorController::AbstractActorController(Actor* actor, int networkID, in
 
     m_spawnPosRot = actor->world;
 
-    if (actor->id == ACTOR_BOSS_VA) {
-        printf("BREAK\n");
-    }
-
     if (m_originalInit)
         m_actor->init = DispatchInit;
     m_actor->update = AbstractActorController::DispatchUpdate;
@@ -605,7 +608,11 @@ void AbstractActorController::DispatchDestroy(Actor* actor, PlayState* play) {
     ::ZeldaOnline::AbstractActorController::ClearController(actor, controller);
     controller->m_actor = nullptr;
 
-    ZeldaOnlineClient::Instance->RemoveNetworkedActor(controller->NetworkID(), controller);
+    // Actor destruction can also happen while disconnecting or changing scenes.
+    // Do not dereference the singleton after the network client has been torn down.
+    if (auto* client = ZeldaOnlineClient::Instance; client != nullptr) {
+        client->RemoveNetworkedActor(controller->NetworkID(), controller);
+    }
     delete controller;
 
     if (original != NULL) {
@@ -655,7 +662,9 @@ void AbstractActorController::ActorInit(PlayState* play) {
 
 void AbstractActorController::Update(PlayState* play) {
     if (m_runningLocally) {
-        m_originalUpdate(m_actor, play);
+        if (m_originalUpdate != nullptr && m_actor != nullptr) {
+            m_originalUpdate(m_actor, play);
+        }
         return;
     }
     UpdateLeadershipLock();
