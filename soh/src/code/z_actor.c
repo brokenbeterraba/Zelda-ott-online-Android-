@@ -17,6 +17,7 @@
 
 #include "soh/ActorDB.h"
 #include "soh/OTRGlobals.h"
+#include "soh/Network/ZeldaOnline/ZeldaOnlineClient.hpp"
 
 #include <string.h>
 #include <stdlib.h>
@@ -1237,7 +1238,7 @@ void Actor_SetObjectDependency(PlayState* play, Actor* actor) {
     gSegments[6] = VIRTUAL_TO_PHYSICAL(play->objectCtx.status[actor->objBankIndex].segment);
 }
 
-void Actor_Init(Actor* actor, PlayState* play) {
+void Actor_Init(Actor* actor, PlayState* play, int delayInit) {
     Actor_SetWorldToHome(actor);
     Actor_SetShapeRotToWorld(actor);
     Actor_SetFocus(actor, 0.0f);
@@ -1253,7 +1254,8 @@ void Actor_Init(Actor* actor, PlayState* play) {
     CollisionCheck_InitInfo(&actor->colChkInfo);
     actor->floorBgId = BGCHECK_SCENE;
     ActorShape_Init(&actor->shape, 0.0f, NULL, 0.0f);
-    if (Object_IsLoaded(&play->objectCtx, actor->objBankIndex)) {
+    // ZeldaOnline: delayInit adia o init (o cliente anexa o controlador de rede antes; Actor_UpdateAll inicializa depois)
+    if (!delayInit && Object_IsLoaded(&play->objectCtx, actor->objBankIndex)) {
         Actor_SetObjectDependency(play, actor);
 
         if (GameInteractor_ShouldActorDelayInit(actor)) {
@@ -2653,7 +2655,9 @@ void Actor_UpdateAll(PlayState* play, ActorContext* actorCtx) {
                 }
                 actor = actor->next;
             } else if (!Object_IsLoaded(&play->objectCtx, actor->objBankIndex)) {
+                gZeldaOnlineEngineCleanup = 1; // ZeldaOnline: limpeza do motor, não é morte "real"
                 Actor_Kill(actor);
+                gZeldaOnlineEngineCleanup = 0;
                 actor = actor->next;
             } else if ((unkFlag && !(actor->flags & unkFlag)) ||
                        (!unkFlag && unkCondition && (sp74 != actor) && (actor != player->naviActor) &&
@@ -3165,6 +3169,7 @@ void func_80031A28(PlayState* play, ActorContext* actorCtx) {
     Actor* actor;
     s32 i;
 
+    gZeldaOnlineEngineCleanup = 1; // ZeldaOnline
     for (i = 0; i < ARRAY_COUNT(actorCtx->actorLists); i++) {
         actor = actorCtx->actorLists[i].head;
         while (actor != NULL) {
@@ -3174,6 +3179,7 @@ void func_80031A28(PlayState* play, ActorContext* actorCtx) {
             actor = actor->next;
         }
     }
+    gZeldaOnlineEngineCleanup = 0; // ZeldaOnline
 }
 
 u8 sEnemyActorCategories[] = { ACTORCAT_ENEMY, ACTORCAT_BOSS };
@@ -3195,6 +3201,7 @@ void func_80031B14(PlayState* play, ActorContext* actorCtx) {
     Actor* actor;
     s32 i;
 
+    gZeldaOnlineEngineCleanup = 1; // ZeldaOnline: limpando a sala
     for (i = 0; i < ARRAY_COUNT(actorCtx->actorLists); i++) {
         actor = actorCtx->actorLists[i].head;
         while (actor != NULL) {
@@ -3212,6 +3219,7 @@ void func_80031B14(PlayState* play, ActorContext* actorCtx) {
             }
         }
     }
+    gZeldaOnlineEngineCleanup = 0; // ZeldaOnline
 
     CollisionCheck_ClearContext(play, &play->colChkCtx);
     actorCtx->flags.tempClear = 0;
@@ -3324,8 +3332,11 @@ void Actor_FreeOverlay(ActorDBEntry* dbEntry) {
 //      array to spawn An example of what this fixes, is that it allows hookshot to be used as child
 int gMapLoading = 0;
 
-Actor* Actor_Spawn(ActorContext* actorCtx, PlayState* play, s16 actorId, f32 posX, f32 posY, f32 posZ, s16 rotX,
-                   s16 rotY, s16 rotZ, s16 params) {
+// ZeldaOnline: este é o corpo original de Actor_Spawn. Actor_Spawn agora passa pelo cliente de rede (ver abaixo),
+// que decide se o ator é criado localmente ou pelo servidor, e acaba chamando esta função.
+Actor* Actor_SpawnDirect(ActorContext* actorCtx, PlayState* play, s16 actorId, f32 posX, f32 posY, f32 posZ, s16 rotX,
+                         s16 rotY, s16 rotZ, f32 homeposX, f32 homeposY, f32 homeposZ, s16 homerotX, s16 homerotY,
+                         s16 homerotZ, s16 params, int delayInit) {
     Actor* actor;
     s32 objBankIndex;
     u32 temp;
@@ -3390,6 +3401,7 @@ Actor* Actor_Spawn(ActorContext* actorCtx, PlayState* play, s16 actorId, f32 pos
     if (dbEntry->id == ACTOR_EN_PART) {
         actor->objBankIndex = rotZ;
         rotZ = 0;
+        homerotZ = 0;
     } else {
         actor->objBankIndex = objBankIndex;
     }
@@ -3399,18 +3411,18 @@ Actor* Actor_Spawn(ActorContext* actorCtx, PlayState* play, s16 actorId, f32 pos
     actor->update = dbEntry->update;
     actor->draw = dbEntry->draw;
     actor->room = play->roomCtx.curRoom.num;
-    actor->home.pos.x = posX;
-    actor->home.pos.y = posY;
-    actor->home.pos.z = posZ;
-    actor->home.rot.x = rotX;
-    actor->home.rot.y = rotY;
-    actor->home.rot.z = rotZ;
+    actor->home.pos.x = homeposX;
+    actor->home.pos.y = homeposY;
+    actor->home.pos.z = homeposZ;
+    actor->home.rot.x = homerotX;
+    actor->home.rot.y = homerotY;
+    actor->home.rot.z = homerotZ;
     actor->params = params;
 
     Actor_AddToCategory(actorCtx, actor, dbEntry->category);
 
     temp = gSegments[6];
-    Actor_Init(actor, play);
+    Actor_Init(actor, play, delayInit);
     gSegments[6] = temp;
 
     GameInteractor_ExecuteOnActorSpawn(actor);
@@ -3418,9 +3430,18 @@ Actor* Actor_Spawn(ActorContext* actorCtx, PlayState* play, s16 actorId, f32 pos
     return actor;
 }
 
-Actor* Actor_SpawnAsChild(ActorContext* actorCtx, Actor* parent, PlayState* play, s16 actorId, f32 posX, f32 posY,
-                          f32 posZ, s16 rotX, s16 rotY, s16 rotZ, s16 params) {
-    Actor* spawnedActor = Actor_Spawn(actorCtx, play, actorId, posX, posY, posZ, rotX, rotY, rotZ, params);
+// ZeldaOnline: todo spawn "normal" do jogo passa pelo cliente de rede (igual à versão de PC).
+// Offline/sem rede o cliente cai de volta em Actor_SpawnDirect.
+Actor* Actor_Spawn(ActorContext* actorCtx, PlayState* play, s16 actorId, f32 posX, f32 posY, f32 posZ, s16 rotX,
+                   s16 rotY, s16 rotZ, s16 params) {
+    return ZeldaOnlineClient_SpawnActor(actorId, posX, posY, posZ, rotX, rotY, rotZ, params);
+}
+
+Actor* Actor_SpawnAsChildDirect(ActorContext* actorCtx, Actor* parent, PlayState* play, s16 actorId, f32 posX, f32 posY,
+                                f32 posZ, s16 rotX, s16 rotY, s16 rotZ, f32 homeposX, f32 homeposY, f32 homeposZ,
+                                s16 homerotX, s16 homerotY, s16 homerotZ, s16 params, int delayInit) {
+    Actor* spawnedActor = Actor_SpawnDirect(actorCtx, play, actorId, posX, posY, posZ, rotX, rotY, rotZ, homeposX,
+                                            homeposY, homeposZ, homerotX, homerotY, homerotZ, params, delayInit);
 
     if (spawnedActor == NULL) {
         return NULL;
@@ -3446,46 +3467,9 @@ Actor* Actor_SpawnAsChild(ActorContext* actorCtx, Actor* parent, PlayState* play
     return spawnedActor;
 }
 
-// Zelda Online needs to preserve the actor's authored home transform while placing its
-// current world transform at the position received from the network.
-Actor* Actor_SpawnDirect(ActorContext* actorCtx, PlayState* play, s16 actorId,
-                         f32 posX, f32 posY, f32 posZ, s16 rotX, s16 rotY, s16 rotZ,
-                         f32 homeX, f32 homeY, f32 homeZ, s16 homeRotX, s16 homeRotY, s16 homeRotZ,
-                         s16 params, bool updateHome) {
-    Actor* actor = Actor_Spawn(actorCtx, play, actorId, homeX, homeY, homeZ, homeRotX, homeRotY, homeRotZ, params);
-    if (actor == NULL) return NULL;
-
-    actor->world.pos.x = posX;
-    actor->world.pos.y = posY;
-    actor->world.pos.z = posZ;
-    actor->world.rot.x = rotX;
-    actor->world.rot.y = rotY;
-    actor->world.rot.z = rotZ;
-    actor->shape.rot = actor->world.rot;
-    actor->prevPos = actor->world.pos;
-
-    if (updateHome) {
-        actor->home.pos.x = homeX;
-        actor->home.pos.y = homeY;
-        actor->home.pos.z = homeZ;
-        actor->home.rot.x = homeRotX;
-        actor->home.rot.y = homeRotY;
-        actor->home.rot.z = homeRotZ;
-    }
-    return actor;
-}
-
-Actor* Actor_SpawnAsChildDirect(ActorContext* actorCtx, Actor* parent, PlayState* play, s16 actorId,
-                                f32 posX, f32 posY, f32 posZ, s16 rotX, s16 rotY, s16 rotZ,
-                                f32 homeX, f32 homeY, f32 homeZ, s16 homeRotX, s16 homeRotY, s16 homeRotZ,
-                                s16 params, bool updateHome) {
-    Actor* actor = Actor_SpawnDirect(actorCtx, play, actorId, posX, posY, posZ, rotX, rotY, rotZ,
-                                     homeX, homeY, homeZ, homeRotX, homeRotY, homeRotZ, params, updateHome);
-    if (actor == NULL || parent == NULL) return actor;
-    parent->child = actor;
-    actor->parent = parent;
-    if (actor->room >= 0) actor->room = parent->room;
-    return actor;
+Actor* Actor_SpawnAsChild(ActorContext* actorCtx, Actor* parent, PlayState* play, s16 actorId, f32 posX, f32 posY,
+                          f32 posZ, s16 rotX, s16 rotY, s16 rotZ, s16 params) {
+    return ZeldaOnlineClient_SpawnActorAsChild(parent, actorId, posX, posY, posZ, rotX, rotY, rotZ, params);
 }
 
 void Actor_SpawnTransitionActors(PlayState* play, ActorContext* actorCtx) {

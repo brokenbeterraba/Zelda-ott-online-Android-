@@ -3043,6 +3043,14 @@ extern "C" Actor* ZeldaOnlineClient_SpawnActor(s16 actorId, f32 posX, f32 posY, 
                                                s16 params) {
     auto instance = ZeldaOnline::ZeldaOnlineClient::Instance;
 
+    // Cliente ainda não criado (ou jogo sem multiplayer): comportamento vanilla.
+    if (instance == nullptr) {
+        if (gPlayState == nullptr)
+            return nullptr;
+        return Actor_SpawnDirect(&gPlayState->actorCtx, gPlayState, actorId, posX, posY, posZ, rotX, rotY, rotZ, posX,
+                                 posY, posZ, rotX, rotY, rotZ, params, 0);
+    }
+
     if (gMapLoading)
         return instance->RequestSpawnActor(actorId, posX, posY, posZ, rotX, rotY, rotZ, params);
 
@@ -3053,6 +3061,12 @@ extern "C" Actor* ZeldaOnlineClient_SpawnActorAsChild(Actor* parent, s16 actorId
                                                       s16 rotX, s16 rotY, s16 rotZ, s16 params) {
 
     auto instance = ZeldaOnline::ZeldaOnlineClient::Instance;
+    if (instance == nullptr) {
+        if (gPlayState == nullptr)
+            return nullptr;
+        return Actor_SpawnAsChildDirect(&gPlayState->actorCtx, parent, gPlayState, actorId, posX, posY, posZ, rotX,
+                                        rotY, rotZ, posX, posY, posZ, rotX, rotY, rotZ, params, 0);
+    }
     return instance->SpawnActorAsChild(parent, actorId, posX, posY, posZ, rotX, rotY, rotZ, params);
 }
 

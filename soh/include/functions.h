@@ -494,15 +494,15 @@ Actor* Actor_Spawn(ActorContext* actorCtx, PlayState* play, s16 actorId, f32 pos
                    s16 rotX, s16 rotY, s16 rotZ, s16 params);
 Actor* Actor_SpawnAsChild(ActorContext* actorCtx, Actor* parent, PlayState* play, s16 actorId, f32 posX,
                           f32 posY, f32 posZ, s16 rotX, s16 rotY, s16 rotZ, s16 params);
-// Spawn using home transform for actor initialization, then apply a distinct world transform.
+// ZeldaOnline: corpo original de Actor_Spawn. delayInit != 0 adia o init do ator para o próximo frame.
 Actor* Actor_SpawnDirect(ActorContext* actorCtx, PlayState* play, s16 actorId,
                          f32 posX, f32 posY, f32 posZ, s16 rotX, s16 rotY, s16 rotZ,
                          f32 homeX, f32 homeY, f32 homeZ, s16 homeRotX, s16 homeRotY, s16 homeRotZ,
-                         s16 params, bool updateHome);
+                         s16 params, int delayInit);
 Actor* Actor_SpawnAsChildDirect(ActorContext* actorCtx, Actor* parent, PlayState* play, s16 actorId,
                                 f32 posX, f32 posY, f32 posZ, s16 rotX, s16 rotY, s16 rotZ,
                                 f32 homeX, f32 homeY, f32 homeZ, s16 homeRotX, s16 homeRotY, s16 homeRotZ,
-                                s16 params, bool updateHome);
+                                s16 params, int delayInit);
 void Actor_SpawnTransitionActors(PlayState* play, ActorContext* actorCtx);
 Actor* Actor_SpawnEntry(ActorContext* actorCtx, ActorEntry* actorEntry, PlayState* play);
 Actor* Actor_Delete(ActorContext* actorCtx, Actor* actor, PlayState* play);
