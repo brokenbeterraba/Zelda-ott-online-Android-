@@ -137,6 +137,10 @@
 #include "ActorControllers/JyaCobraController.hpp"
 #include "ActorControllers/IkController.hpp"
 #include "ActorControllers/JyaIronobjController.hpp"
+#include "ActorControllers/BombiwaController.hpp"
+#include "ActorControllers/HamishiController.hpp"
+#include "ActorControllers/JyaBombiwaController.hpp"
+#include "ActorControllers/HidanKowarerukabeController.hpp"
 #include "ActorControllers/JyaZurerukabeController.hpp"
 #include "ActorControllers/TwinrovaController.hpp"
 #include "ActorControllers/TrController.hpp"
@@ -400,6 +404,10 @@ class ActorControllerFactory {
                                      [](s16 params) { return JyaCobraController::IsNetworkedVariant(params); });
         Register<IkController>(ACTOR_EN_IK);
         Register<JyaIronobjController>(ACTOR_BG_JYA_IRONOBJ);
+        Register<BombiwaController>(ACTOR_OBJ_BOMBIWA);
+        Register<HamishiController>(ACTOR_OBJ_HAMISHI);
+        Register<JyaBombiwaController>(ACTOR_BG_JYA_BOMBIWA);
+        Register<HidanKowarerukabeController>(ACTOR_BG_HIDAN_KOWARERUKABE);
         Register<JyaZurerukabeController>(ACTOR_BG_JYA_ZURERUKABE);
         Register<TwinrovaController>(ACTOR_BOSS_TW);
         Register<TrController>(ACTOR_EN_TR);

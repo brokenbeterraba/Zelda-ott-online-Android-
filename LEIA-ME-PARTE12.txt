@@ -1,0 +1,3 @@
+Parte 12 - rochas/paredes quebraveis
+Copie os 5 arquivos nos mesmos caminhos.
+Novos: Obj_Bombiwa (pedra de bomba), Obj_Hamishi (pedra de martelo), Bg_Jya_Bombiwa, Bg_Hidan_Kowarerukabe.
