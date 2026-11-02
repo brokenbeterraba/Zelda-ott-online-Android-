@@ -124,9 +124,18 @@ void Audio_ClearBGMMute(u8 channelIdx) {
     }
 }
 
+// ZeldaOnline: sons de atores sincronizados pela rede
+int ZeldaOnline_ShouldSuppressActorSound(unsigned short sfxId);
+int ZeldaOnline_ShouldTransmitActorSound(unsigned short sfxId);
+void ZeldaOnline_OnActorSound(unsigned short sfxId, float x, float y, float z);
+
 void Audio_PlaySoundGeneral(u16 sfxId, Vec3f* pos, u8 token, f32* freqScale, f32* vol, s8* reverbAdd) {
     size_t i;
     SoundRequest* req;
+
+    if (ZeldaOnline_ShouldSuppressActorSound(sfxId)) {
+        return;
+    }
 
     if (!gSoundBankMuted[SFX_BANK_SHIFT(sfxId)]) {
         req = &sSoundRequests[sSoundRequestWriteIndex];
@@ -156,6 +165,12 @@ void Audio_PlaySoundGeneral(u16 sfxId, Vec3f* pos, u8 token, f32* freqScale, f32
         req->vol = vol;
         req->reverbAdd = reverbAdd;
         sSoundRequestWriteIndex++;
+
+        if (ZeldaOnline_ShouldTransmitActorSound(sfxId)) {
+            if (pos != NULL) {
+                ZeldaOnline_OnActorSound(sfxId, pos->x, pos->y, pos->z);
+            }
+        }
     }
 }
 
