@@ -134,6 +134,7 @@ namespace ZeldaOnline
 			return scene;
 		}
 
+		void SendToItemShareGroup(Player* player, const ByteStream& packet);
 		void SetPlayerParty(Player* player, std::shared_ptr<Party> party);
 
 		bool DungeonsReset() const {

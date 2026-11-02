@@ -1855,27 +1855,7 @@ namespace ZeldaOnline
 			packet << PackedUInt2(modId);
 			packet << PackedUInt2(getItemId);
 
-			if (auto& party = player->GetParty())
-				party->SendToAll(packet, player);
-		}
-		break;
-
-		case CLIENT_PACKET_GIVE_ITEM:
-		{
-			// Item pego por um jogador: retransmite para o resto da party (em qualquer cena), menos para quem enviou.
-			unsigned int modId = data.Read<PackedUInt2>().value();
-			unsigned int getItemId = data.Read<PackedUInt2>().value();
-			uint16_t mapIndex = data.Read<PackedUInt2>().value();
-
-			if (auto& party = player->GetParty())
-			{
-				ByteStream packet = newPacket(SERVER_PACKET_GIVE_ITEM);
-				packet << PackedUInt2(player->NetworkID());
-				packet << PackedUInt2(modId);
-				packet << PackedUInt2(getItemId);
-				packet << PackedUInt2(mapIndex);
-				party->SendToAll(packet, player);
-			}
+			SendToItemShareGroup(player, packet);
 		}
 		break;
 
@@ -1915,6 +1895,11 @@ namespace ZeldaOnline
 				party->SetDungeonKeys(mapIndex, count);
 				party->SendToAll(newPacket(SERVER_PACKET_UPDATE_DUNGEON_KEYS) << PackedUInt1(mapIndex) << PackedUInt1(party->DungeonKeys(mapIndex)), player);
 			}
+			else
+			{
+				// sem party: compartilha com os outros jogadores que tambem estao sem party
+				SendToItemShareGroup(player, newPacket(SERVER_PACKET_UPDATE_DUNGEON_KEYS) << PackedUInt1(mapIndex) << PackedUInt1(count));
+			}
 		}
 		break;
 
@@ -1922,6 +1907,27 @@ namespace ZeldaOnline
 			std::printf("OOTServer: unknown packet id %u from player %d\n",
 				clientPacketID, player->NetworkID());
 			break;
+		}
+	}
+
+	// Itens: com party -> so membros da party; sem party -> todos os outros jogadores sem party.
+	void OOTServer::SendToItemShareGroup(Player* player, const ByteStream& packet)
+	{
+		if (player == nullptr)
+			return;
+
+		if (auto party = player->GetParty())
+		{
+			party->SendToAll(packet, player);
+			return;
+		}
+
+		for (auto& entry : m_players)
+		{
+			Player* other = entry.second.get();
+			if (other == nullptr || other == player || other->GetParty() != nullptr)
+				continue;
+			other->SendPacket(packet);
 		}
 	}
 

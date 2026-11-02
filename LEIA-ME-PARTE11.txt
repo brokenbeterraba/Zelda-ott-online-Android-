@@ -1,0 +1,3 @@
+Parte 11 - itens sem party
+Copie server/src/OOTServer.cpp e OOTServer.hpp para o repo (mesmos caminhos).
+Sem party: itens/chaves vao para todos sem party. Com party: so a party.
