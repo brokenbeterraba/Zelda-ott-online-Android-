@@ -3432,14 +3432,36 @@ Actor* Actor_SpawnOriginal(ActorContext* actorCtx, PlayState* play, s16 actorId,
     return actor;
 }
 
+// ZeldaOnline: Actor_SpawnAsChild exatamente como no jogo original (sem passar pelo cliente online)
+static Actor* Actor_SpawnAsChildOriginal(ActorContext* actorCtx, Actor* parent, PlayState* play, s16 actorId, f32 posX,
+                                         f32 posY, f32 posZ, s16 rotX, s16 rotY, s16 rotZ, s16 params) {
+    Actor* spawnedActor = Actor_SpawnOriginal(actorCtx, play, actorId, posX, posY, posZ, rotX, rotY, rotZ, params);
+
+    if (spawnedActor == NULL) {
+        return NULL;
+    }
+    if (parent != NULL) {
+        parent->child = spawnedActor;
+        spawnedActor->parent = parent;
+    }
+    return spawnedActor;
+}
+
 Actor* Actor_SpawnAsChild(ActorContext* actorCtx, Actor* parent, PlayState* play, s16 actorId, f32 posX, f32 posY,
                           f32 posZ, s16 rotX, s16 rotY, s16 rotZ, s16 params) {
+    // ZeldaOnline: fora do PlayState ativo (carregando/destruindo cena) usa o comportamento original do jogo
+    if (play == NULL || play != gPlayState || actorCtx != &play->actorCtx) {
+        return Actor_SpawnAsChildOriginal(actorCtx, parent, play, actorId, posX, posY, posZ, rotX, rotY, rotZ, params);
+    }
     return ZeldaOnlineClient_SpawnActorAsChild(parent, actorId, posX, posY, posZ, rotX, rotY, rotZ, params);
 }
 
 // ZeldaOnline: todo spawn passa pelo cliente, que decide se o ator é local ou controlado pelo servidor
 Actor* Actor_Spawn(ActorContext* actorCtx, PlayState* play, s16 actorId, f32 posX, f32 posY, f32 posZ, s16 rotX,
                    s16 rotY, s16 rotZ, s16 params) {
+    if (play == NULL || play != gPlayState || actorCtx != &play->actorCtx) {
+        return Actor_SpawnOriginal(actorCtx, play, actorId, posX, posY, posZ, rotX, rotY, rotZ, params);
+    }
     return ZeldaOnlineClient_SpawnActor(actorId, posX, posY, posZ, rotX, rotY, rotZ, params);
 }
 

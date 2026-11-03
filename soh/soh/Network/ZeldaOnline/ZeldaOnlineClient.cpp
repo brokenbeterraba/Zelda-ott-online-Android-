@@ -2565,8 +2565,8 @@ Actor* ZeldaOnlineClient::RequestSpawnActor(s16 actorId, f32 posX, f32 posY, f32
 
     if (!ActorControllerFactory::Instance().IsNetworked(actorId, params) || !isConnected ||
         gPlayState->roomCtx.curRoom.num < 0) {
-        return Actor_SpawnDirect(&gPlayState->actorCtx, gPlayState, actorId, posX, posY, posZ, rotX, rotY, rotZ, posX,
-                                 posY, posZ, rotX, rotY, rotZ, params, 0);
+        return Actor_SpawnOriginal(&gPlayState->actorCtx, gPlayState, actorId, posX, posY, posZ, rotX, rotY, rotZ,
+                                   params);
     }
 
     auto& dbEntry = ActorDB::Instance->RetrieveEntry(actorId).entry;
@@ -2659,8 +2659,8 @@ Actor* ZeldaOnlineClient::SpawnActor(s16 actorId, f32 posX, f32 posY, f32 posZ, 
             }
         }
 
-        return Actor_SpawnDirect(&gPlayState->actorCtx, gPlayState, actorId, posX, posY, posZ, rotX, rotY, rotZ, posX,
-                                 posY, posZ, rotX, rotY, rotZ, params, 0);
+        return Actor_SpawnOriginal(&gPlayState->actorCtx, gPlayState, actorId, posX, posY, posZ, rotX, rotY, rotZ,
+                                   params);
     }
 
 
@@ -3043,8 +3043,8 @@ extern "C" Actor* ZeldaOnlineClient_SpawnActor(s16 actorId, f32 posX, f32 posY, 
                                                s16 params) {
     auto instance = ZeldaOnline::ZeldaOnlineClient::Instance;
 
-    if (instance == nullptr) {
-        // cliente ainda não criado: comportamento original do jogo
+    if (instance == nullptr || !instance->isConnected) {
+        // sem conexão online: comportamento original do jogo
         if (gPlayState == nullptr)
             return nullptr;
         return Actor_SpawnOriginal(&gPlayState->actorCtx, gPlayState, actorId, posX, posY, posZ, rotX, rotY, rotZ,
@@ -3061,7 +3061,7 @@ extern "C" Actor* ZeldaOnlineClient_SpawnActorAsChild(Actor* parent, s16 actorId
                                                       s16 rotX, s16 rotY, s16 rotZ, s16 params) {
 
     auto instance = ZeldaOnline::ZeldaOnlineClient::Instance;
-    if (instance == nullptr) {
+    if (instance == nullptr || !instance->isConnected) {
         if (gPlayState == nullptr)
             return nullptr;
         return Actor_SpawnAsChildDirect(&gPlayState->actorCtx, parent, gPlayState, actorId, posX, posY, posZ, rotX,

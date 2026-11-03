@@ -1,0 +1,2 @@
+Parte 15 - diagnostico de crash
+Copie os 2 arquivos (um e novo). Depois do crash, envie crash_native.log (fica junto do Ship_of_Harkinian.log).

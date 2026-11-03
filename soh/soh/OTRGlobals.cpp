@@ -1,4 +1,5 @@
 #include "OTRGlobals.h"
+extern "C" void ZoInstallCrashLogger(const char* dir);
 #include "OTRAudio.h"
 #include <algorithm>
 #include <atomic>
@@ -889,6 +890,9 @@ void OTRGlobals::Initialize() {
     context->GetResourceManager()->SetAltAssetsEnabled(prevAltAssets);
 
     context->InitCrashHandler();
+
+    // ZeldaOnline: grava backtrace de crash nativo em crash_native.log (Android)
+    ZoInstallCrashLogger(Ship::Context::GetAppDirectoryPath(appShortName).c_str());
 
     context->GetWindow()->SetAutoCaptureMouse(CVarGetInteger(CVAR_SETTING("EnableMouse"), 0) &&
                                               CVarGetInteger(CVAR_SETTING("AutoCaptureMouse"), 1));

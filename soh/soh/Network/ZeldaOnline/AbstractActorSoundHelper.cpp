@@ -31,5 +31,9 @@ extern "C" void ZeldaOnline_OnActorSound(unsigned short sfxId, float x, float y,
     if (ctx != nullptr) {
         networkID = ctx->NetworkID();
     }
-    ZeldaOnline::ZeldaOnlineClient::Instance->TransmitActorSound(networkID, sfxId);
+    auto* client = ZeldaOnline::ZeldaOnlineClient::Instance;
+    if (client == nullptr || !client->isConnected) {
+        return;
+    }
+    client->TransmitActorSound(networkID, sfxId);
 }

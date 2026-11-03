@@ -97,6 +97,10 @@ class AbstractActorController {
     AbstractActorController(Actor* actor, int networkID, int sceneKey, int roomIndex, bool isLeader);
 
     virtual ~AbstractActorController() {
+        if (s_actorSoundContext == this)
+            s_actorSoundContext = nullptr;
+        if (s_currentLeaderContext == this)
+            s_currentLeaderContext = nullptr;
         if (m_actor != nullptr && ::ZeldaOnline::AbstractActorController::GetController(m_actor) == this) {
             if (m_actor->init == &AbstractActorController::DispatchInit) {
                 m_actor->init = m_originalInit;
